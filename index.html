@@ -29,13 +29,13 @@
   button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 
   /* ---------- Hero ---------- */
-  .hero { position: relative; min-height: 100svh; display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 32px clamp(16px, 6vw, 96px); overflow: hidden; }
+  .hero { position: relative; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 96px clamp(16px, 6vw, 96px) 64px; overflow: hidden; }
   .top { position: absolute; inset: 0 0 auto 0; display: flex; justify-content: space-between; align-items: center; padding: 22px clamp(16px, 6vw, 96px); z-index: 2; font-size: 13px; letter-spacing: .2em; text-transform: uppercase; }
   .top a { text-decoration: none; opacity: .75; }
   .top a:hover { opacity: 1; }
   .top nav { display: flex; gap: 24px; }
-  .hero-texto { position: relative; z-index: 1; max-width: 900px; }
-  .marca-fila { display: flex; align-items: center; gap: clamp(16px, 2.4vw, 36px); }
+  .hero-texto { position: relative; z-index: 1; max-width: 900px; display: flex; flex-direction: column; align-items: center; }
+  .marca-fila { display: flex; align-items: center; justify-content: center; gap: clamp(16px, 2.4vw, 36px); }
   .hero-texto .koi { flex: none; width: clamp(84px, 14vw, 210px); aspect-ratio: 1; border-radius: 50%; background: url(assets/img/koi.jpg) center/cover; animation: girar 50s linear infinite; box-shadow: 0 0 0 1px var(--linea), 0 0 0 10px rgba(179,172,189,.04); }
   @keyframes girar { to { transform: rotate(360deg); } }
   .hero h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(38px, 7.4vw, 124px); line-height: .9; letter-spacing: -.05em; color: var(--lila-claro); white-space: nowrap; }
@@ -43,7 +43,7 @@
   .hero .lema strong { display: block; font-family: var(--font-display); font-weight: 400; font-size: clamp(36px, 4.6vw, 64px); line-height: 1; letter-spacing: -.03em; color: var(--lila-claro); }
   .hero .lema > span { display: block; font-family: var(--font-display); font-style: italic; font-size: clamp(20px, 2.2vw, 28px); margin-top: 8px; letter-spacing: -.01em; }
   .hero .lema [lang="ja"] { font-family: var(--font-jp); font-style: normal; font-weight: 300; font-size: .85em; letter-spacing: .1em; white-space: nowrap; }
-  .hero .acciones { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 40px; }
+  .hero .acciones { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 40px; }
   .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 24px; border-radius: 999px; font-weight: 500; font-size: 15px; text-decoration: none; transition: transform .15s, background .2s; }
   .btn:active { transform: scale(.97); }
   .btn-1 { background: var(--lila-claro); color: var(--navy); }
@@ -51,17 +51,16 @@
   .btn-2 { border: 1px solid var(--linea); }
   .btn-2:hover { background: var(--navy-2); }
   .btn svg { width: 18px; height: 18px; }
-  .kanji { position: relative; z-index: 1; writing-mode: vertical-rl; font-family: var(--font-jp); font-weight: 500; font-size: clamp(72px, 12vh, 132px); line-height: 1.02; color: #fff; }
+  .kanji { position: relative; z-index: 1; order: -1; font-family: var(--font-jp); font-weight: 500; font-size: clamp(34px, 4.4vw, 60px); letter-spacing: .14em; line-height: 1; color: #fff; margin-bottom: clamp(24px, 3vw, 40px); }
 
   /* Cuadro de horarios (misma estética que la sección de abajo) */
-  .horarios { margin-top: 40px; max-width: 620px; background: var(--lila-claro); color: var(--navy); border-radius: 22px; padding: 26px 28px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+  .horarios { margin-top: 40px; width: 100%; max-width: 620px; text-align: center; background: var(--lila-claro); color: var(--navy); border-radius: 22px; padding: 26px 28px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
   .horarios .turno + .turno { border-left: 1px solid rgba(6,6,58,.18); padding-left: 28px; }
   .horarios small { display: block; font-size: 11px; letter-spacing: .26em; text-transform: uppercase; opacity: .65; }
   .horarios h3 { font-family: var(--font-display); font-weight: 400; font-size: clamp(32px, 3.4vw, 46px); line-height: .9; letter-spacing: -.04em; text-transform: uppercase; margin: 6px 0 8px; }
   .horarios .h { font-family: var(--font-display); font-size: 22px; letter-spacing: -.01em; }
   .horarios .que { display: inline-block; margin-top: 10px; font-size: 13px; font-weight: 500; padding: 5px 12px; border-radius: 999px; background: var(--navy); color: var(--lila-claro); }
   .horarios .aviso { grid-column: 1 / -1; margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(6,6,58,.18); font-size: 13.5px; }
-  .salmon-flota { position: absolute; right: clamp(120px, 18vw, 300px); bottom: -40px; width: clamp(260px, 30vw, 460px); aspect-ratio: 1.5; background: url(assets/img/nigiri.jpg) center/cover; border-radius: 50% 50% 0 0 / 60% 60% 0 0; mix-blend-mode: normal; z-index: 0; filter: saturate(1.05); }
 
   /* ---------- Info strip ---------- */
   .strip { display: grid; grid-template-columns: repeat(3, 1fr); border-block: 1px solid var(--linea); }
@@ -133,11 +132,9 @@
 
   @media (max-width: 820px) {
     .top nav { display: none; }
-    .hero { grid-template-columns: 1fr; align-content: center; padding-top: 88px; padding-bottom: 220px; }
-    .kanji { order: -1; writing-mode: horizontal-tb; font-size: 34px; letter-spacing: .12em; margin-bottom: 28px; }
+    .hero { padding-top: 88px; padding-bottom: 56px; }
     .horarios { grid-template-columns: 1fr; padding: 22px 20px 18px; }
     .horarios .turno + .turno { border-left: 0; padding-left: 0; border-top: 1px solid rgba(6,6,58,.18); margin-top: 18px; padding-top: 18px; }
-    .salmon-flota { right: -40px; width: 300px; }
     .strip { grid-template-columns: 1fr; }
     .strip div { border-right: 0; border-bottom: 1px solid var(--linea); }
     .strip div:last-child { border-bottom: 0; }
@@ -184,7 +181,6 @@
     </div>
   </div>
   <div class="kanji" lang="ja" aria-hidden="true">一朗寿司屋</div>
-  <div class="salmon-flota" aria-hidden="true"></div>
 </header>
 
 <div class="strip">
