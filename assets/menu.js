@@ -1,5 +1,5 @@
 // Carta de Ichiro Sushiya — sacada del diseño de Canva.
-// Para cambiar precios o platos, se edita solo este archivo y se actualizan los dos prototipos.
+// Para cambiar precios o platos, se edita solo este archivo.
 window.ICHIRO = {
   whatsapp: "5492215566644",
   whatsappLabel: "+54 9 221 556-6644",
