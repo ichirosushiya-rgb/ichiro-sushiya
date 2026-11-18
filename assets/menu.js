@@ -5,8 +5,8 @@ window.ICHIRO = {
   whatsappLabel: "+54 9 221 556-6644",
   instagram: "ichirosushiya",
   horarios: [
-    { dia: "Sábados", detalle: "De 14:00 a 20:00 hs" },
-    { dia: "Domingos", detalle: "Hasta las 12:00" },
+    { dia: "Lunes a viernes", detalle: "Mediodías de 12:00 a 14:30 hs · solo pokes" },
+    { dia: "Sábados y domingos", detalle: "A la noche · encargues de sushi y más" },
   ],
   aviso: "Pedidos con anticipación, reservas limitadas",
   categorias: [
