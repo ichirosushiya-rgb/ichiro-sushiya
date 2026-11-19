@@ -1,0 +1,16 @@
+# Cloudflare: el Worker de Ichiro Sushiya (src/worker.js) + los archivos de public/
+name = "ichiro-sushiya"
+main = "src/worker.js"
+compatibility_date = "2026-01-01"
+
+# Conserva los Secrets cargados en el panel de Cloudflare en cada deploy desde GitHub
+keep_vars = true
+
+[vars]
+# La dirección del proyecto de Supabase (no es secreta). Las claves van como Secrets:
+#   SUPABASE_SECRET_KEY  ·  ADMIN_TOKEN (contraseña del panel)  ·  BREVO_API_KEY (mails)
+SUPABASE_URL = ""
+
+[assets]
+directory = "public"
+binding = "ASSETS"
