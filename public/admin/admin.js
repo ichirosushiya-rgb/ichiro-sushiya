@@ -78,7 +78,7 @@
       if (b.dataset.tab === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
     document.querySelectorAll(".vista").forEach((v) => (v.hidden = v.id !== "v-" + t));
-    ({ pedidos: cargarPedidos, dia: cargarDia, carta: cargarCarta, ajustes: cargarAjustes })[t]();
+    ({ pedidos: cargarPedidos, dia: cargarDia, carta: cargarCarta, metricas: cargarMetricas, ajustes: cargarAjustes })[t]();
   }
 
   let refresco = 0;
@@ -509,6 +509,158 @@
         return true;
       }));
   }
+
+  // ---------------------------------------------------------------- Métricas
+  const DIAS_SEMANA = ["", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+  let periodo = "semana";
+
+  function rangoDe(p) {
+    const hoy = hoyAR();
+    const d = new Date(hoy + "T12:00:00");
+    const iso = (x) => x.toISOString().slice(0, 10);
+    if (p === "semana") { const lunes = sumarDias(hoy, -((d.getDay() + 6) % 7)); return [lunes, sumarDias(lunes, 6)]; }
+    if (p === "7") return [sumarDias(hoy, -6), hoy];
+    if (p === "30") return [sumarDias(hoy, -29), hoy];
+    if (p === "mes") return [hoy.slice(0, 8) + "01", iso(new Date(d.getFullYear(), d.getMonth() + 1, 0, 12))];
+    if (p === "mes-pasado") return [iso(new Date(d.getFullYear(), d.getMonth() - 1, 1, 12)), iso(new Date(d.getFullYear(), d.getMonth(), 0, 12))];
+    return [$("#m-desde").value, $("#m-hasta").value];
+  }
+
+  $("#periodo").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-p]"); if (!b) return;
+    periodo = b.dataset.p;
+    cargarMetricas();
+  });
+  $("#periodo").addEventListener("change", (e) => {
+    if (e.target.type !== "date" || !$("#m-desde").value || !$("#m-hasta").value) return;
+    periodo = "a-medida";
+    cargarMetricas();
+  });
+
+  const cargarMetricas = conError(async () => {
+    const [desde, hasta] = rangoDe(periodo);
+    document.querySelectorAll("#periodo button").forEach((x) => x.setAttribute("aria-pressed", x.dataset.p === periodo));
+    $("#m-desde").value = desde; $("#m-hasta").value = hasta;
+    if (!desde || !hasta || desde > hasta) return toast("Elegí un período válido", true);
+    $("#m-contenido").innerHTML = `<div class="vacio">Calculando…</div>`;
+    pintarMetricas(await api(`metricas?desde=${desde}&hasta=${hasta}`));
+  });
+
+  // Escala del eje: 3 marcas redondas (0, mitad, tope)
+  function tope(max) {
+    if (max <= 0) return 1;
+    const paso = Math.pow(10, Math.floor(Math.log10(max)));
+    return Math.ceil(max / paso) * paso;
+  }
+  const corto = (n) => n >= 1e6 ? "$" + (n / 1e6).toLocaleString("es-AR", { maximumFractionDigits: 1 }) + "M"
+    : n >= 1e3 ? "$" + Math.round(n / 1e3) + "k" : "$" + n;
+  const pct = (n, t) => t ? Math.round((n / t) * 100) + "%" : "0%";
+
+  function barras(filas, total, formato) {
+    const max = Math.max(1, ...filas.map((f) => f.valor));
+    return `<div class="hbarras">${filas.map((f) => `
+      <div class="hbarra" data-tip="${esc(f.tip || "")}">
+        <span class="nom" title="${esc(f.nombre)}">${esc(f.nombre)}${f.sub ? ` <small>${esc(f.sub)}</small>` : ""}</span>
+        <span class="riel"><i style="width:${(f.valor / max) * 100}%"></i></span>
+        <span class="val">${formato(f)}</span>
+      </div>`).join("")}</div>`;
+  }
+
+  function pintarMetricas(m) {
+    const caja = $("#m-contenido");
+    const dias = m.por_dia || [];
+    const maxV = tope(Math.max(0, ...dias.map((d) => d.ventas)));
+    const cadaCuanto = Math.ceil(dias.length / (innerWidth < 720 ? 4 : 10)); // pocas etiquetas abajo, que entren
+    const turnos = m.por_turno || {};
+    const modal = m.por_modalidad || {};
+    const totalModal = (modal.retiro || 0) + (modal.envio || 0);
+
+    const kpis = `
+      <div class="kpis">
+        <div class="kpi"><small>Ventas</small><b>${precio(m.ventas)}</b>${m.envios ? `<span>${precio(m.envios)} de envíos</span>` : ""}</div>
+        <div class="kpi"><small>Pedidos</small><b>${m.pedidos}</b></div>
+        <div class="kpi"><small>Ticket promedio</small><b>${precio(m.ticket)}</b></div>
+        <div class="kpi"><small>Productos vendidos</small><b>${m.unidades}</b></div>
+      </div>
+      <div class="kpis chicos">
+        <div class="kpi"><small>Clientes</small><b>${m.clientes}</b><span>${m.recurrentes} repitieron</span></div>
+        <div class="kpi"><small>Sin confirmar</small><b>${m.pendientes}</b><span>pendientes</span></div>
+        <div class="kpi"><small>Rechazados o cancelados</small><b>${m.perdidos}</b></div>
+      </div>`;
+
+    if (!m.pedidos) {
+      caja.innerHTML = kpis + `<div class="vacio">No hay pedidos confirmados en este período.</div>`;
+      return;
+    }
+
+    const columnas = `
+      <div class="grafico ancho">
+        <h3>Ventas por día</h3>
+        <p class="sub">Pasá el mouse (o tocá) una barra para ver el detalle</p>
+        <div class="columnas">
+          ${[1, 0.5].map((f) => `<div class="grilla-y" style="bottom:${f * 100}%"><span>${corto(maxV * f)}</span></div>`).join("")}
+          ${dias.map((d) => `<div class="col ${d.ventas ? "" : "cero"}" data-tip="${esc(`<b>${fechaLarga(d.fecha)}</b>${precio(d.ventas)} · ${d.pedidos} ${d.pedidos === 1 ? "pedido" : "pedidos"}`)}"><i style="height:${(d.ventas / maxV) * 100}%"></i></div>`).join("")}
+        </div>
+        <div class="ejes-x">${dias.map((d, i) => `<span>${i % cadaCuanto ? "" : fechaCorta(d.fecha)}</span>`).join("")}</div>
+        <details><summary>Ver como tabla</summary>
+          <table><thead><tr><th>Día</th><th class="n">Pedidos</th><th class="n">Ventas</th></tr></thead>
+          <tbody>${dias.filter((d) => d.pedidos).map((d) => `<tr><td>${fechaLarga(d.fecha)}</td><td class="n">${d.pedidos}</td><td class="n">${precio(d.ventas)}</td></tr>`).join("")}</tbody></table>
+        </details>
+      </div>`;
+
+    const productos = `
+      <div class="grafico">
+        <h3>Lo más pedido</h3>
+        <p class="sub">Unidades vendidas · el número de la derecha es la cantidad</p>
+        ${barras(m.productos.map((p) => ({ nombre: p.nombre, sub: p.categoria, valor: p.cantidad, tip: `<b>${p.categoria} ${p.nombre}</b>${p.cantidad} u. · ${precio(p.ventas)}` })), 0, (f) => f.valor)}
+      </div>`;
+
+    const turnoFilas = [["mediodia", "Pokes (mediodía)"], ["finde", "Finde"]].map(([k, n]) => ({
+      nombre: n, valor: (turnos[k] || {}).ventas || 0, pedidos: (turnos[k] || {}).pedidos || 0,
+      tip: `<b>${n}</b>${(turnos[k] || {}).pedidos || 0} pedidos · ${precio((turnos[k] || {}).ventas || 0)}`,
+    }));
+    const reparto = `
+      <div class="grafico">
+        <h3>Cómo se reparte</h3>
+        <p class="sub">Ventas por turno y pedidos por forma de entrega</p>
+        ${barras(turnoFilas, 0, (f) => `${precio(f.valor)} · ${pct(f.valor, m.ventas)}`)}
+        <div style="height:16px"></div>
+        ${barras([["retiro", "Retiro"], ["envio", "Envío"]].map(([k, n]) => ({ nombre: n, valor: modal[k] || 0, tip: `<b>${n}</b>${modal[k] || 0} pedidos` })), 0,
+          (f) => `${f.valor} · ${pct(f.valor, totalModal)}`)}
+      </div>`;
+
+    const horarios = `
+      <div class="grafico">
+        <h3>Horarios más pedidos</h3>
+        <p class="sub">Cantidad de pedidos por horario de entrega</p>
+        ${barras(m.por_horario.map((h) => ({ nombre: h.horario, valor: h.pedidos, tip: `<b>${h.horario}</b>${h.pedidos} pedidos` })), 0, (f) => f.valor)}
+      </div>`;
+
+    const semana = `
+      <div class="grafico">
+        <h3>Por día de la semana</h3>
+        <p class="sub">Ventas sumadas de cada día en el período</p>
+        ${barras(m.por_dia_semana.map((d) => ({ nombre: DIAS_SEMANA[d.dia], valor: d.ventas, tip: `<b>${DIAS_SEMANA[d.dia]}</b>${d.pedidos} pedidos · ${precio(d.ventas)}` })), 0, (f) => precio(f.valor))}
+      </div>`;
+
+    caja.innerHTML = kpis + `<div class="graficos">${columnas}${productos}${reparto}${horarios}${semana}</div>`;
+  }
+
+  // Un solo cartelito que sigue al mouse (o aparece al tocar en el celular)
+  const tip = $("#tip");
+  function mostrarTip(e) {
+    const el = e.target.closest("[data-tip]");
+    if (!el || !el.dataset.tip) { tip.hidden = true; return; }
+    tip.innerHTML = el.dataset.tip;
+    tip.hidden = false;
+    const x = (e.clientX ?? el.getBoundingClientRect().left), y = (e.clientY ?? el.getBoundingClientRect().top);
+    const w = tip.offsetWidth;
+    tip.style.left = Math.max(8, Math.min(innerWidth - w - 8, x - w / 2)) + "px";
+    tip.style.top = Math.max(8, y - tip.offsetHeight - 14) + "px";
+  }
+  $("#m-contenido").addEventListener("pointermove", mostrarTip);
+  $("#m-contenido").addEventListener("pointerdown", mostrarTip);
+  $("#m-contenido").addEventListener("pointerleave", () => (tip.hidden = true));
 
   // ---------------------------------------------------------------- Ajustes
   const cargarAjustes = conError(async () => {

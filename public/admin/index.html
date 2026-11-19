@@ -41,6 +41,7 @@
       <button data-tab="pedidos" aria-current="page">Pedidos <span class="badge" id="badge" hidden></span></button>
       <button data-tab="dia">Stock del día</button>
       <button data-tab="carta">Carta</button>
+      <button data-tab="metricas">Métricas</button>
       <button data-tab="ajustes">Ajustes</button>
     </nav>
     <button class="salir" id="salir">Salir</button>
@@ -79,6 +80,19 @@
     <div id="carta-lista"></div>
   </section>
 
+  <section class="vista" id="v-metricas" hidden>
+    <div class="filtros periodo" id="periodo">
+      <button data-p="semana" aria-pressed="true">Esta semana</button>
+      <button data-p="7" aria-pressed="false">Últimos 7 días</button>
+      <button data-p="30" aria-pressed="false">Últimos 30 días</button>
+      <button data-p="mes" aria-pressed="false">Este mes</button>
+      <button data-p="mes-pasado" aria-pressed="false">Mes pasado</button>
+      <span class="rango"><input type="date" id="m-desde" aria-label="Desde"> a <input type="date" id="m-hasta" aria-label="Hasta"></span>
+    </div>
+    <p class="sub m-nota">Cuentan los pedidos confirmados y entregados, por el día de entrega.</p>
+    <div id="m-contenido"></div>
+  </section>
+
   <section class="vista" id="v-ajustes" hidden>
     <form id="ajustes-form" class="ajustes"></form>
   </section>
@@ -100,6 +114,7 @@
 </dialog>
 
 <div class="toast" id="toast" role="status" hidden></div>
+<div class="tip" id="tip" role="tooltip" hidden></div>
 <script src="admin.js"></script>
 </body>
 </html>

@@ -183,6 +183,13 @@ async function api(req, env, ctx, url) {
     return json(await rpc(env, "copiar_dia", { p_desde: b.desde, p_hasta: b.hasta }));
   }
 
+  if (a === "metricas" && metodo === "GET") {
+    const desde = q.get("desde"), hasta = q.get("hasta");
+    if (!FECHA.test(desde || "") || !FECHA.test(hasta || "") || desde > hasta) return error("Elegí un período válido");
+    if ((new Date(hasta) - new Date(desde)) / 864e5 > 400) return error("El período puede ser de hasta un año");
+    return json(await rpc(env, "metricas", { p_desde: desde, p_hasta: hasta }));
+  }
+
   if (a === "carta" && metodo === "GET") {
     const [categorias, productos] = await Promise.all([
       sb(env, "categorias?order=orden.asc,id.asc"),

@@ -180,3 +180,53 @@ input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--navy); }
 .foto-botones .ayuda small { font-weight: 400; }
 .btn.subir { display: inline-flex; color: var(--texto); font-size: 14px; cursor: pointer; }
 .prod .nom .mini { float: left; width: 40px; height: 40px; border-radius: 8px; object-fit: cover; margin-right: 10px; }
+
+/* ---------- Métricas ---------- */
+.periodo { flex-wrap: wrap; align-items: center; }
+.periodo .rango { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--suave); }
+.periodo .rango input { width: auto; padding: 7px 10px; font-size: 14px; }
+.m-nota { margin: -4px 0 14px; font-size: 13px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+.kpis.chicos { grid-template-columns: repeat(3, 1fr); }
+.kpi { background: #fff; border: 1px solid var(--linea); border-radius: 18px; padding: 16px; }
+.kpi small { display: block; font-size: 12.5px; color: var(--suave); margin-bottom: 6px; }
+.kpi b { font: 400 38px/1 var(--font-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.kpis.chicos .kpi b { font-size: 28px; }
+.kpi span { display: block; margin-top: 6px; font-size: 12.5px; color: var(--suave); }
+.graficos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.grafico { background: #fff; border: 1px solid var(--linea); border-radius: 18px; padding: 16px; min-width: 0; }
+.grafico.ancho { grid-column: 1 / -1; }
+.grafico h3 { font: 400 24px var(--font-display); letter-spacing: -.01em; margin-bottom: 2px; }
+.grafico .sub { font-size: 12.5px; margin-bottom: 14px; }
+/* Barras verticales por día */
+.columnas { position: relative; height: 200px; display: flex; align-items: flex-end; gap: 2px; padding-left: 44px; border-bottom: 1px solid var(--linea); }
+.columnas .grilla-y { position: absolute; left: 44px; right: 0; border-top: 1px dashed rgba(6,6,58,.08); }
+.columnas .grilla-y span { position: absolute; left: -44px; top: -8px; width: 38px; text-align: right; font-size: 11px; color: var(--suave); font-variant-numeric: tabular-nums; }
+.columnas .col { flex: 1; height: 100%; display: flex; align-items: flex-end; cursor: default; }
+.columnas .col i { display: block; width: 100%; max-width: 36px; margin: 0 auto; background: var(--navy); border-radius: 4px 4px 0 0; min-height: 0; }
+.columnas .col:hover i { background: var(--navy-3); }
+.columnas .col.cero i { background: transparent; }
+.ejes-x { display: flex; gap: 2px; padding-left: 44px; margin-top: 6px; overflow: hidden; }
+.ejes-x span { flex: 1 1 0; min-width: 0; text-align: left; font-size: 11px; color: var(--suave); white-space: nowrap; overflow: visible; }
+/* Barras horizontales */
+.hbarras { display: grid; gap: 10px; }
+.hbarra { display: grid; grid-template-columns: minmax(90px, 32%) 1fr auto; gap: 10px; align-items: center; font-size: 14px; }
+.hbarra .nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbarra .nom small { color: var(--suave); }
+.hbarra .riel { height: 12px; background: var(--fondo); border-radius: 4px; overflow: hidden; }
+.hbarra .riel i { display: block; height: 100%; background: var(--navy); border-radius: 0 4px 4px 0; }
+.hbarra .val { font-variant-numeric: tabular-nums; color: var(--suave); font-size: 13px; text-align: right; min-width: 64px; }
+.grafico details { margin-top: 12px; font-size: 13px; }
+.grafico summary { cursor: pointer; color: var(--suave); }
+.grafico table { width: 100%; border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.grafico th, .grafico td { text-align: left; padding: 5px 4px; border-bottom: 1px solid var(--linea); }
+.grafico td.n, .grafico th.n { text-align: right; }
+.tip { position: fixed; z-index: 60; pointer-events: none; background: var(--navy); color: #fff; padding: 8px 10px; border-radius: 10px; font-size: 13px; line-height: 1.35; box-shadow: 0 10px 30px rgba(0,0,0,.25); white-space: nowrap; }
+.tip b { display: block; }
+@media (max-width: 720px) {
+  .kpis { grid-template-columns: 1fr 1fr; }
+  .kpis.chicos { grid-template-columns: 1fr 1fr 1fr; }
+  .kpis.chicos .kpi b { font-size: 24px; }
+  .graficos { grid-template-columns: 1fr; }
+  .periodo .rango { flex-basis: 100%; }
+}
