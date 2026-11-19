@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Noto+Serif+JP:wght@300;500&display=swap" rel="stylesheet">
 <style>
   :root {
+    --alto-barra: 62px;
     --navy: #06063a;
     --navy-2: #0e0e4c;
     --navy-3: #17175e;
@@ -30,10 +31,23 @@
 
   /* ---------- Hero ---------- */
   .hero { position: relative; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 96px clamp(16px, 6vw, 96px) 64px; overflow: hidden; }
-  .top { position: absolute; inset: 0 0 auto 0; display: flex; justify-content: space-between; align-items: center; padding: 22px clamp(16px, 6vw, 96px); z-index: 2; font-size: 13px; letter-spacing: .2em; text-transform: uppercase; }
+  /* Barra fija arriba durante todo el recorrido */
+  html { scroll-padding-top: calc(var(--alto-barra) + 12px); }
+  .top { position: fixed; inset: 0 0 auto 0; z-index: 40; height: var(--alto-barra); display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 0 clamp(16px, 6vw, 96px); background: rgba(6, 6, 58, .9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--linea); font-size: 13px; letter-spacing: .2em; text-transform: uppercase; }
   .top a { text-decoration: none; opacity: .75; }
   .top a:hover { opacity: 1; }
   .top nav { display: flex; gap: 24px; }
+  .top .marca-barra { display: flex; align-items: center; gap: 12px; opacity: 1; text-transform: none; letter-spacing: -.03em; font-family: var(--font-display); font-size: 26px; color: var(--lila-claro); white-space: nowrap; }
+  .koi-mini { width: 40px; height: 40px; border-radius: 50%; background: url(assets/img/koi.jpg) center/cover; animation: girar 20s linear infinite; box-shadow: 0 0 0 1px var(--linea); }
+  .top .pedir-barra { display: none; opacity: 1; padding: 8px 16px; border-radius: 999px; background: var(--lila-claro); color: var(--navy); font-weight: 500; letter-spacing: .06em; }
+
+  /* Flecha para bajar a la carta */
+  /* Flotante abajo al centro; se esconde apenas se empieza a bajar (web.js) */
+  .bajar { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); z-index: 30; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 10px; padding: 10px 14px 10px 20px; border-radius: 999px; background: rgba(6, 6, 58, .88); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(179, 172, 189, .35); box-shadow: 0 12px 30px rgba(0, 0, 0, .35); text-decoration: none; font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--lila-claro); white-space: nowrap; transition: opacity .3s, transform .3s; }
+  .bajar.oculta { opacity: 0; transform: translate(-50%, 16px); pointer-events: none; }
+  .bajar svg { width: 24px; height: 24px; animation: rebote 1.6s ease-in-out infinite; }
+  @keyframes rebote { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
+  @media (prefers-reduced-motion: reduce) { .koi-mini, .hero-texto .koi, .bajar svg { animation: none; } }
   .hero-texto { position: relative; z-index: 1; max-width: 900px; display: flex; flex-direction: column; align-items: center; }
   .marca-fila { display: flex; align-items: center; justify-content: center; gap: clamp(16px, 2.4vw, 36px); }
   .hero-texto .koi { flex: none; width: clamp(84px, 14vw, 210px); aspect-ratio: 1; border-radius: 50%; background: url(assets/img/koi.jpg) center/cover; animation: girar 50s linear infinite; box-shadow: 0 0 0 1px var(--linea), 0 0 0 10px rgba(179,172,189,.04); }
@@ -68,12 +82,12 @@
   .carta-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
   .carta-head h2 { font-family: var(--font-display); font-weight: 400; font-size: clamp(52px, 8vw, 110px); line-height: .9; letter-spacing: -.045em; }
   .carta-head p { max-width: 340px; font-size: 15px; line-height: 1.5; color: #4a4a72; }
-  .tabs { position: sticky; top: 0; z-index: 5; display: flex; gap: 8px; overflow-x: auto; padding: 14px 0; margin-bottom: 16px; background: #fff; scrollbar-width: none; }
+  .tabs { position: sticky; top: var(--alto-barra); z-index: 5; display: flex; gap: 8px; overflow-x: auto; padding: 14px 0; margin-bottom: 16px; background: #fff; scrollbar-width: none; }
   .tabs::-webkit-scrollbar { display: none; }
   .tabs button { flex: none; padding: 9px 18px; border-radius: 999px; border: 1px solid var(--linea-c); font-size: 14px; letter-spacing: .04em; transition: background .2s, color .2s; }
   .tabs button:hover { border-color: var(--navy); }
   .tabs button[aria-pressed="true"] { background: var(--navy); color: #fff; border-color: var(--navy); }
-  .grupo { scroll-margin-top: 80px; }
+  .grupo { scroll-margin-top: calc(var(--alto-barra) + 80px); }
   .grupo + .grupo { margin-top: 56px; }
   .subtitulo { display: flex; align-items: baseline; gap: 14px; padding: 16px 0 14px; margin-bottom: 18px; border-bottom: 1px solid var(--linea-c); }
   .subtitulo h3 { font-family: var(--font-display); font-weight: 400; font-size: clamp(36px, 4vw, 52px); line-height: 1; letter-spacing: -.035em; }
@@ -161,6 +175,9 @@
 
   @media (max-width: 820px) {
     .top nav { display: none; }
+    .top .pedir-barra { display: inline-block; }
+    .top .marca-barra { font-size: 22px; gap: 10px; }
+    .koi-mini { width: 34px; height: 34px; }
     .hero { padding-top: 88px; padding-bottom: 56px; }
     .horarios { grid-template-columns: 1fr; padding: 22px 20px 18px; }
     .horarios .turno + .turno { border-left: 0; padding-left: 0; border-top: 1px solid rgba(6,6,58,.18); margin-top: 18px; padding-top: 18px; }
@@ -176,11 +193,13 @@
   <symbol id="i-ig" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".6" fill="currentColor"/></g></symbol>
 </svg>
 
+<div class="top">
+  <a class="marca-barra" href="#" aria-label="Ichiro Sushiya, volver arriba"><span class="koi-mini" aria-hidden="true"></span>Ichiro Sushiya</a>
+  <nav><a href="#carta">Carta</a><a href="#horarios">Horarios</a><a class="js-ig" href="#" target="_blank" rel="noopener">Instagram</a></nav>
+  <a class="pedir-barra" href="#carta">Pedir</a>
+</div>
+
 <header class="hero">
-  <div class="top">
-    <span>Pokes al mediodía · Sushi el finde</span>
-    <nav><a href="#carta">Carta</a><a href="#horarios">Horarios</a><a class="js-ig" href="#" target="_blank" rel="noopener">Instagram</a></nav>
-  </div>
   <div class="hero-texto">
     <div class="marca-fila">
       <div class="koi" role="img" aria-label="Logo de Ichiro Sushiya: dos peces koi"></div>
@@ -206,6 +225,9 @@
       <a class="btn btn-1" href="#carta">Armar mi pedido</a>
       <a class="btn btn-2 js-wa" href="#" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>WhatsApp</a>
     </div>
+    <a class="bajar" id="bajar" href="#carta">Bajá para pedir
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8l6 6 6-6M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
   </div>
   <div class="kanji" lang="ja" aria-hidden="true">一朗寿司屋</div>
 </header>

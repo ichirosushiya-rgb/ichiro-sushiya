@@ -337,6 +337,12 @@
     }
   });
 
+  // La flecha «Bajá para pedir» se va apenas se empieza a bajar
+  const flecha = $("#bajar");
+  const mirarFlecha = () => flecha.classList.toggle("oculta", window.scrollY > 80);
+  window.addEventListener("scroll", mirarFlecha, { passive: true });
+  mirarFlecha();
+
   // ---------------------------------------------------------------- Arranque
   pintarTextos();
   pintarTabs();
