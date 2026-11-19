@@ -239,6 +239,9 @@ function respuestaDeError(err) {
     if (err.codigo === "23503") return error("No se puede borrar: tiene productos o datos que dependen de esto. Desactivalo o mové sus productos primero.", 409);
     if (err.codigo === "23514" || err.codigo === "22P02") return error("Revisá los datos: hay un valor que no corresponde", 400);
     if (err.codigo === "config") return error(err.message, 503);
+    // Problemas de puesta en marcha: se dicen claros (no revelan nada secreto)
+    if (err.status === 401 || err.status === 403) return error("La clave de Supabase (SUPABASE_SECRET_KEY) no es válida", 503);
+    if (err.codigo === "PGRST202" || err.codigo === "42P01" || err.codigo === "PGRST205") return error("Falta crear las tablas: correr supabase/schema.sql en Supabase", 503);
   }
   console.error("api:", err && err.message);
   return error("Algo falló de nuestro lado. Probá de nuevo en un rato.", 500);
