@@ -67,6 +67,10 @@
   @keyframes rebote { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
   @media (prefers-reduced-motion: reduce) { .koi-mini, .hero-texto .koi, .bajar svg { animation: none; } }
   .hero-texto { position: relative; z-index: 1; max-width: 900px; display: flex; flex-direction: column; align-items: center; }
+  /* Inicio: el logo solo y, debajo, el nombre en japonés (para lectores de pantalla y Google dice «Ichiro Sushiya») */
+  .hero-texto .koi.koi-hero { width: clamp(150px, 22vw, 240px); }
+  .hero .titulo-jp { margin-top: clamp(22px, 3vw, 34px); font-family: var(--font-jp); font-weight: 500; font-size: clamp(50px, 8vw, 104px); line-height: 1; letter-spacing: .14em; margin-right: -.14em; color: #fff; white-space: nowrap; }
+  .solo-lector { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .marca-fila { display: flex; align-items: center; justify-content: center; gap: clamp(16px, 2.4vw, 36px); }
   .hero-texto .koi { flex: none; width: clamp(84px, 14vw, 210px); aspect-ratio: 1; border-radius: 50%; background: url(assets/img/koi.jpg) center/cover; animation: girar 50s linear infinite; box-shadow: 0 0 0 1px var(--linea), 0 0 0 10px rgba(179,172,189,.04); }
   @keyframes girar { to { transform: rotate(360deg); } }
@@ -240,10 +244,8 @@
 
 <header class="hero">
   <div class="hero-texto">
-    <div class="marca-fila">
-      <div class="koi" role="img" aria-label="Logo de Ichiro Sushiya: dos peces koi"></div>
-      <h1>Ichiro Sushiya</h1>
-    </div>
+    <div class="koi koi-hero" role="img" aria-label="Logo de Ichiro Sushiya: dos peces koi"></div>
+    <h1 class="titulo-jp" lang="ja">一朗寿司屋<span class="solo-lector" lang="es">Ichiro Sushiya</span></h1>
     <p class="lema"><strong>Dos hermanos</strong><span>unidos por la cocina y nuestro abuelo <span lang="ja">おじいちゃん</span></span></p>
     <div class="horarios" id="horarios" aria-label="Horarios">
       <div class="turno">
@@ -268,7 +270,6 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8l6 6 6-6M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
   </div>
-  <div class="kanji" lang="ja" aria-hidden="true">一朗寿司屋</div>
 </header>
 
 <section class="carta" id="carta">
