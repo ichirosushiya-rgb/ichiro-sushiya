@@ -89,12 +89,7 @@
       el.hidden = !v;
     });
     if (C) {
-      const t = A.textos || {};
-      $("#strip-m").textContent = [t.mediodia_dias, t.mediodia_horario].filter(Boolean).join(" · ");
-      $("#strip-f").textContent = [t.finde_dias, t.finde_horario || "noche"].filter(Boolean).join(" · ");
-      $("#del-m").textContent = [t.mediodia_dias, t.mediodia_horario].filter(Boolean).join(", ") + (t.mediodia_etiqueta ? " · " + t.mediodia_etiqueta.toLowerCase() : "");
-      $("#del-f").textContent = [t.finde_dias, t.finde_horario].filter(Boolean).join(", ") + (t.finde_etiqueta ? " · " + t.finde_etiqueta.toLowerCase() : "");
-      $("#carta-ayuda").innerHTML = "Sumá lo que quieras con <b>+</b> y hacé tu pedido acá mismo. Te lo confirmamos por WhatsApp.";
+      $("#carta-ayuda").innerHTML ="Sumá lo que quieras con <b>+</b> y hacé tu pedido acá mismo. Te lo confirmamos por WhatsApp.";
     }
     const wa = A.whatsapp || L.whatsapp;
     const waLabel = wa.replace(/^549?(\d{3})(\d{3})(\d{4})$/, "+54 9 $1 $2-$3");
