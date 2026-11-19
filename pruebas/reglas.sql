@@ -32,7 +32,7 @@ declare
   sab date := (select sabado from f);
   poke bigint := (select id from productos where nombre = 'Poke salmón');
   calif bigint := (select id from productos where nombre = 'California');
-  base jsonb := jsonb_build_object('nombre', 'Ana Prueba', 'telefono', '221 555-1234', 'modalidad', 'retiro');
+  base jsonb := jsonb_build_object('nombre', 'Ana Prueba', 'telefono', '221 555-1234', 'modalidad', 'retiro', 'pago', 'transferencia');
   r jsonb;
   c jsonb;
 begin
@@ -58,16 +58,29 @@ begin
   perform pg_temp.espera_error(format('select crear_pedido(%L)', base || jsonb_build_object('fecha', sab, 'horario', '03:00',
          'items', jsonb_build_array(jsonb_build_object('id', calif, 'cantidad', 1)))), 'horario de la lista');
 
-  -- 6. Sushi el finde, con envío ($1.500), sin stock cargado = sin límite; repetidos se juntan
-  update ajustes set valor = '1500' where clave = 'costo_envio';
-  r := crear_pedido(base || jsonb_build_object('fecha', sab, 'horario', '21:00', 'modalidad', 'envio', 'direccion', 'Calle 7 nº 123',
+  -- 6. Sushi el finde, con envío a City Bell ($1.500), sin stock cargado = sin límite; repetidos se juntan
+  update ajustes set valor = '[{"nombre":"La Plata","costo":0},{"nombre":"City Bell","costo":1500}]' where clave = 'zonas';
+  r := crear_pedido(base || jsonb_build_object('fecha', sab, 'horario', '21:00', 'modalidad', 'envio', 'zona', 'City Bell', 'direccion', 'Calle 7 nº 123',
          'items', jsonb_build_array(jsonb_build_object('id', calif, 'cantidad', 1), jsonb_build_object('id', calif, 'cantidad', 2))));
   assert (r->>'subtotal')::int = 25500 and (r->>'envio')::int = 1500 and (r->>'total')::int = 27000, 'total finde: ' || r::text;
   assert jsonb_array_length(r->'items') = 1, 'repetidos juntos';
+  assert (r->>'sena')::int = 27000 and (r->>'saldo')::int = 0 and r->>'zona' = 'City Bell', 'transferencia = 100%: ' || r::text;
 
-  -- 7. Envío sin dirección
-  perform pg_temp.espera_error(format('select crear_pedido(%L)', base || jsonb_build_object('fecha', sab, 'horario', '21:00', 'modalidad', 'envio',
+  -- 7. Envío sin dirección, sin zona o con una zona que no está en la lista; sin forma de pago
+  perform pg_temp.espera_error(format('select crear_pedido(%L)', base || jsonb_build_object('fecha', sab, 'horario', '21:00', 'modalidad', 'envio', 'zona', 'La Plata',
          'items', jsonb_build_array(jsonb_build_object('id', calif, 'cantidad', 1)))), 'dirección');
+  perform pg_temp.espera_error(format('select crear_pedido(%L)', base || jsonb_build_object('fecha', sab, 'horario', '21:00', 'modalidad', 'envio', 'direccion', 'Calle 7 nº 1',
+         'items', jsonb_build_array(jsonb_build_object('id', calif, 'cantidad', 1)))), 'zona');
+  perform pg_temp.espera_error(format('select crear_pedido(%L)', base || jsonb_build_object('fecha', sab, 'horario', '21:00', 'modalidad', 'envio', 'direccion', 'Calle 7 nº 1', 'zona', 'Marte',
+         'items', jsonb_build_array(jsonb_build_object('id', calif, 'cantidad', 1)))), 'zona de entrega de la lista');
+  perform pg_temp.espera_error(format('select crear_pedido(%L)', (base - 'pago') || jsonb_build_object('fecha', sab, 'horario', '21:00',
+         'items', jsonb_build_array(jsonb_build_object('id', calif, 'cantidad', 1)))), 'cómo vas a pagar');
+
+  -- 7b. Efectivo: seña del 50% (redondeada para arriba) y el resto al recibir
+  c := crear_pedido(base || jsonb_build_object('pago', 'efectivo', 'fecha', sab, 'horario', '20:00',
+         'items', jsonb_build_array(jsonb_build_object('id', (select id from productos where nombre = 'Tamago'), 'cantidad', 1))));
+  assert (c->>'total')::int = 9500 and (c->>'sena')::int = 4750 and (c->>'saldo')::int = 4750 and c->>'pago' = 'efectivo', 'seña 50%: ' || c::text;
+  perform cambiar_estado((c->>'id')::bigint, 'rechazado');
 
   -- 8. Stock del finde: con 4 cargados y 3 vendidos, se puede 1 más y no 2
   perform guardar_dia(sab, jsonb_build_array(jsonb_build_object('id', calif, 'cargado', true, 'stock', 4)));

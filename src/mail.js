@@ -24,7 +24,10 @@ export async function avisarPedido(env, pedido, casilla, sitio) {
   const html = `<div style="font-family:Arial,sans-serif;color:#06063a;max-width:520px">
     <h2 style="margin:0 0 4px">Pedido nuevo #${pedido.id}</h2>
     <p style="margin:0 0 16px;color:#555">Para el <b>${esc(diaLargo(pedido.fecha))} a las ${esc(pedido.horario)}</b> ·
-      ${pedido.modalidad === "envio" ? "Envío a " + esc(pedido.direccion) : "Retira en el local"}</p>
+      ${pedido.modalidad === "envio" ? "Envío a " + esc(pedido.direccion) + (pedido.zona ? " (" + esc(pedido.zona) + ")" : "") : "Retira en el local"}</p>
+    <p style="margin:0 0 16px">${pedido.pago === "efectivo"
+      ? `Paga en <b>efectivo</b>: seña de ${precio(pedido.sena)} por transferencia y ${precio(pedido.saldo)} al recibir`
+      : `Paga por <b>transferencia</b>: ${precio(pedido.sena)} (el 100%)`}</p>
     <p style="margin:0 0 16px"><b>${esc(pedido.nombre)}</b> · ${esc(pedido.telefono)}</p>
     <table style="width:100%;border-collapse:collapse;font-size:15px">${filas}
       ${pedido.envio ? `<tr><td style="padding:4px 0">Envío</td><td style="text-align:right">${precio(pedido.envio)}</td></tr>` : ""}

@@ -26,6 +26,7 @@ Navegador ──> Worker de Cloudflare (src/worker.js) ──> Supabase (PostgRE
 | `supabase/schema.sql` | Tablas, reglas y la carta inicial. Se corre una vez |
 | `supabase/002_fotos.sql` | Fotos de los productos (columna y carpeta pública en Storage) |
 | `supabase/003_metricas.sql` | Las métricas del panel (función `metricas`) |
+| `supabase/004_pago_y_zonas.sql` | Forma de pago, seña, zona de envío y «pago recibido» en cada pedido |
 | `diseno/` | Favicon e imagen para compartir el link: se editan en HTML y se exportan con `diseno/exportar.sh` |
 | `pruebas/` | Copia local de todo en Docker, para probar sin tocar nada real |
 | `wrangler.toml` | Configuración de Cloudflare |
@@ -40,6 +41,10 @@ Navegador ──> Worker de Cloudflare (src/worker.js) ──> Supabase (PostgRE
 - **Abrir y cerrar pedidos.** Los interruptores de arriba del panel cierran los pokes o el finde en toda la web.
 - **Fotos.** Cada producto puede tener foto (Carta → Editar → Elegir foto). El panel la achica antes de subirla
   y en la web se ve a la derecha de la tarjeta, con el + encima.
+- **Pago.** El cliente elige transferencia (transfiere el 100%) o efectivo (transfiere la seña, 50% por defecto,
+  y paga el resto al recibir). Después de pedir ve cuánto transferir, los datos (Ajustes → Pagos) y un botón para
+  mandar el comprobante por WhatsApp. En el panel se marca «transferencia/seña recibida».
+- **Zonas de envío.** Los envíos piden zona y dirección; cada zona tiene su costo (Ajustes → Zonas de envío).
 - **Métricas.** Ventas, pedidos, ticket promedio, lo más pedido, horarios y días: cuentan los pedidos confirmados
   y entregados, por el día de entrega. Para verlas con datos en la copia local:
   `docker exec -i ichiro-db psql -U postgres -q < pruebas/pedidos-falsos.sql` (nunca en Supabase).
@@ -49,7 +54,8 @@ Navegador ──> Worker de Cloudflare (src/worker.js) ──> Supabase (PostgRE
 ## Puesta en marcha (una sola vez)
 
 1. **Supabase.** Crear el proyecto (región São Paulo). SQL Editor → pegar y correr, en orden, `supabase/schema.sql`
-   `supabase/002_fotos.sql` (fotos de los productos) y `supabase/003_metricas.sql` (métricas).
+   `supabase/002_fotos.sql` (fotos de los productos) `supabase/003_metricas.sql` (métricas)
+   y `supabase/004_pago_y_zonas.sql` (forma de pago, seña y zonas de envío).
 2. **Dirección del proyecto.** Supabase → Project Settings → Data API → *Project URL*. Va en `wrangler.toml`,
    en `SUPABASE_URL` (no es secreta).
 3. **Secrets en Cloudflare.** Workers & Pages → `ichiro-sushiya` → Settings → Variables and Secrets → Add,

@@ -69,6 +69,11 @@ create table pedidos (
   subtotal    integer not null,
   envio       integer not null default 0,
   total       integer not null,
+  zona        text    not null default '',                 -- barrio/localidad de entrega (004)
+  pago        text    not null default 'transferencia' check (pago in ('transferencia', 'efectivo')),
+  sena        integer not null default 0,                  -- lo que se transfiere antes (100% o la seña)
+  saldo       integer not null default 0,                  -- lo que se paga en efectivo al recibir
+  pago_recibido boolean not null default false,            -- el panel marca que llegó la transferencia
   estado      text    not null default 'pendiente'
               check (estado in ('pendiente', 'confirmado', 'entregado', 'rechazado', 'cancelado'))
 );
@@ -106,7 +111,7 @@ create function ajustes_publicos() returns jsonb language sql stable as $$
   from ajustes
   where clave in ('pedidos_mediodia', 'pedidos_finde', 'franjas_mediodia', 'franjas_finde',
                   'dias_adelante', 'anticipacion_horas', 'costo_envio', 'whatsapp', 'instagram',
-                  'textos', 'aviso')
+                  'textos', 'aviso', 'zonas', 'datos_transferencia', 'sena_porcentaje')
 $$;
 
 -- ---------------------------------------------------------------- La carta para la web
@@ -149,7 +154,9 @@ end $$;
 
 -- ---------------------------------------------------------------- Crear un pedido
 
--- Recibe {nombre, telefono, fecha, horario, modalidad, direccion, notas, items:[{id, cantidad}]}.
+-- Recibe {nombre, telefono, fecha, horario, modalidad, zona, direccion, pago, notas, items:[{id, cantidad}]}.
+-- pago: «transferencia» (se transfiere el 100%) o «efectivo» (seña por transferencia, el resto en efectivo).
+-- El envío sale de la zona elegida (ajuste «zonas»); si no hay zonas cargadas, de «costo_envio».
 -- Los precios salen de la base, nunca del navegador. Descuenta el stock en el momento,
 -- así dos personas no se llevan el último. Los errores salen con un mensaje para el cliente.
 create function crear_pedido(p jsonb) returns jsonb language plpgsql as $$
@@ -161,6 +168,11 @@ declare
   v_modalidad  text := coalesce(p->>'modalidad', '');
   v_direccion  text := btrim(coalesce(p->>'direccion', ''));
   v_notas      text := btrim(coalesce(p->>'notas', ''));
+  v_pago       text := coalesce(p->>'pago', '');
+  v_zona       text := btrim(coalesce(p->>'zona', ''));
+  v_zonas      jsonb := coalesce(ajuste('zonas'), '[]'::jsonb);
+  v_total      int;
+  v_sena       int;
   v_fecha      date;
   v_turno      text;
   v_hoy        date := hoy_ar();
@@ -182,6 +194,12 @@ begin
   end if;
   if v_modalidad = 'envio' and length(v_direccion) < 5 then
     raise exception 'Escribí la dirección de entrega';
+  end if;
+  if v_modalidad = 'envio' and length(v_zona) < 2 then
+    raise exception 'Elegí la zona de entrega';
+  end if;
+  if v_pago not in ('transferencia', 'efectivo') then
+    raise exception 'Elegí cómo vas a pagar';
   end if;
   if length(v_direccion) > 200 or length(v_notas) > 300 then
     raise exception 'La dirección o las notas son demasiado largas';
@@ -254,14 +272,28 @@ begin
   end if;
 
   if v_modalidad = 'envio' then
-    v_envio := greatest(coalesce((ajuste('costo_envio'))::int, 0), 0);
+    if jsonb_array_length(v_zonas) > 0 then
+      select greatest(coalesce((z->>'costo')::int, 0), 0) into v_envio
+      from jsonb_array_elements(v_zonas) z where z->>'nombre' = v_zona;
+      if not found then
+        raise exception 'Elegí la zona de entrega de la lista';
+      end if;
+    else
+      v_envio := greatest(coalesce((ajuste('costo_envio'))::int, 0), 0);
+    end if;
   end if;
 
-  insert into pedidos (nombre, telefono, fecha, turno, horario, modalidad, direccion, notas,
-                       items, subtotal, envio, total)
+  -- Transferencia: el 100% antes. Efectivo: la seña antes (por transferencia) y el resto al recibir.
+  v_total := v_subtotal + v_envio;
+  v_sena := case v_pago when 'transferencia' then v_total
+            else ceil(v_total * least(greatest(coalesce((ajuste('sena_porcentaje'))::int, 50), 0), 100) / 100.0)::int end;
+
+  insert into pedidos (nombre, telefono, fecha, turno, horario, modalidad, zona, direccion, notas,
+                       items, subtotal, envio, total, pago, sena, saldo)
   values (v_nombre, v_telefono, v_fecha, v_turno, v_horario, v_modalidad,
+          case when v_modalidad = 'envio' then v_zona else '' end,
           case when v_modalidad = 'envio' then v_direccion else '' end, v_notas,
-          v_items, v_subtotal, v_envio, v_subtotal + v_envio)
+          v_items, v_subtotal, v_envio, v_total, v_pago, v_sena, v_total - v_sena)
   returning * into v_pedido;
 
   return to_jsonb(v_pedido);
@@ -424,6 +456,9 @@ insert into ajustes (clave, valor) values
   ('whatsapp',           '"5492215566644"'),
   ('instagram',          '"ichirosushiya"'),
   ('mail_avisos',        '""'),
+  ('zonas',              '[{"nombre":"La Plata","costo":0},{"nombre":"Los Porteños","costo":0},{"nombre":"City Bell","costo":0},{"nombre":"Villa Elisa","costo":0},{"nombre":"Gonnet","costo":0},{"nombre":"Tolosa","costo":0},{"nombre":"Ringuelet","costo":0}]'),
+  ('datos_transferencia', '""'),
+  ('sena_porcentaje',    '50'),
   ('aviso',              '"Pedidos con anticipación, reservas limitadas."'),
   ('textos', '{
      "mediodia_dias": "Lunes a viernes", "mediodia_titulo": "Mediodías",

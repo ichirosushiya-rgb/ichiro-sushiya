@@ -164,11 +164,18 @@
   }
   function mensajeWa(p) {
     const items = p.items.map((i) => `• ${i.cantidad} × ${i.categoria} ${i.nombre}`).join("\n");
-    const entrega = p.modalidad === "envio" ? `Lo enviamos a ${p.direccion}.` : "Lo retirás en el local.";
+    const entrega = p.modalidad === "envio" ? `Lo enviamos a ${p.direccion}${p.zona ? " (" + p.zona + ")" : ""}.` : "Lo retirás en el local.";
+    const datosT = (ajustes.datos_transferencia || "").trim();
+    const pagoTxt = !p.sena ? "" : p.pago_recibido
+      ? (p.pago === "efectivo" ? `\n\nYa recibimos la seña de ${precio(p.sena)}: los otros ${precio(p.saldo)} los pagás en efectivo al recibir.` : `\n\nYa recibimos tu transferencia de ${precio(p.sena)}.`)
+      : (p.pago === "efectivo"
+        ? `\n\nPara reservarlo, transferí la seña de ${precio(p.sena)}${datosT ? ":\n" + datosT : "."}\nLos otros ${precio(p.saldo)} los pagás en efectivo al recibir.`
+        : `\n\nPara dejarlo pago, transferí ${precio(p.sena)}${datosT ? ":\n" + datosT : "."}`)
+        + "\n\nCuando transfieras, mandanos el comprobante por acá.";
     if (p.estado === "rechazado" || p.estado === "cancelado") {
       return `¡Hola ${p.nombre}! Te escribimos de Ichiro Sushiya por tu pedido #${p.id} del ${fechaLarga(p.fecha).toLowerCase()}: lamentablemente no lo vamos a poder hacer. Disculpá las molestias.`;
     }
-    return `¡Hola ${p.nombre}! Te confirmamos tu pedido #${p.id} de Ichiro Sushiya para el ${fechaLarga(p.fecha).toLowerCase()} a las ${p.horario}:\n\n${items}\n\nTotal: ${precio(p.total)}. ${entrega} ¡Gracias!`;
+    return `¡Hola ${p.nombre}! Te confirmamos tu pedido #${p.id} de Ichiro Sushiya para el ${fechaLarga(p.fecha).toLowerCase()} a las ${p.horario}:\n\n${items}\n\nTotal: ${precio(p.total)}. ${entrega}${pagoTxt}\n\n¡Gracias!`;
   }
   const linkWa = (p) => `https://wa.me/${numeroWa(p.telefono)}?text=${encodeURIComponent(mensajeWa(p))}`;
 
@@ -189,8 +196,16 @@
       <div class="cliente">
         <b>#${p.id} · ${esc(p.nombre)}</b>
         <a href="tel:${esc(p.telefono)}">${esc(p.telefono)}</a>
-        <span>${p.modalidad === "envio" ? "Envío: " + mapa : "Retira en el local"}</span>
+        <span>${p.modalidad === "envio" ? `Envío${p.zona ? " a <b>" + esc(p.zona) + "</b>" : ""}: ` + mapa : "Retira en el local"}</span>
       </div>
+      ${p.sena ? `<div class="pago ${p.pago_recibido ? "ok" : ""}">
+        <span>${p.pago === "efectivo"
+          ? `<b>Efectivo</b> · seña ${precio(p.sena)} por transferencia + ${precio(p.saldo)} al recibir`
+          : `<b>Transferencia</b> · ${precio(p.sena)} (100%)`}</span>
+        ${["rechazado", "cancelado"].includes(p.estado) ? "" : `<button class="btn" data-pago="${p.id}" data-recibido="${!p.pago_recibido}">${p.pago_recibido
+          ? "✓ " + (p.pago === "efectivo" ? "Seña recibida" : "Transferencia recibida")
+          : "Marcar " + (p.pago === "efectivo" ? "seña" : "transferencia") + " recibida"}</button>`}
+      </div>` : ""}
       <ul class="items">
         ${p.items.map((i) => `<li><span>${i.cantidad} × ${esc(i.categoria)} ${esc(i.nombre)}</span><span>${precio(i.precio * i.cantidad)}</span></li>`).join("")}
         ${p.envio ? `<li><span>Envío</span><span>${precio(p.envio)}</span></li>` : ""}
@@ -217,6 +232,16 @@
   }
 
   $("#pedidos-lista").addEventListener("click", conError(async (e) => {
+    const bp = e.target.closest("button[data-pago]");
+    if (bp) {
+      bp.disabled = true;
+      const p = await api("pago", { method: "POST", body: { id: Number(bp.dataset.pago), recibido: bp.dataset.recibido === "true" } });
+      const i = pedidos.findIndex((x) => x.id === p.id);
+      if (i >= 0) pedidos[i] = p;
+      pintarPedidos();
+      toast(p.pago_recibido ? "Pago marcado como recibido" : "Pago desmarcado");
+      return;
+    }
     const b = e.target.closest("button[data-accion]"); if (!b) return;
     const estado = b.dataset.accion;
     const id = Number(b.dataset.id);
@@ -697,6 +722,15 @@
   $("#m-contenido").addEventListener("pointerleave", () => (tip.hidden = true));
 
   // ---------------------------------------------------------------- Ajustes
+  const filaZona = (z = { nombre: "", costo: 0 }) => `<div class="zona">
+      <input class="z-nom" maxlength="40" placeholder="Zona (ej: City Bell)" value="${esc(z.nombre)}" aria-label="Nombre de la zona">
+      <span class="z-precio"><input class="z-costo" type="number" min="0" step="1" inputmode="numeric" value="${z.costo ?? 0}" aria-label="Costo del envío"></span>
+      <button type="button" class="btn peligro z-sacar" aria-label="Sacar zona">×</button>
+    </div>`;
+  document.addEventListener("click", (e) => {
+    if (e.target.id === "a-zona-mas") { $("#a-zonas").insertAdjacentHTML("beforeend", filaZona()); $("#a-zonas .zona:last-child .z-nom").focus(); }
+    if (e.target.classList.contains("z-sacar")) e.target.closest(".zona").remove();
+  });
   const cargarAjustes = conError(async () => {
     ajustes = await api("ajustes");
     pintarInterruptores();
@@ -710,7 +744,16 @@
           ${campo("a-dias", "Días para adelante que se pueden pedir", ajustes.dias_adelante, 'type="number" min="0" max="30"')}
           ${campo("a-antic", "Horas de anticipación mínima", ajustes.anticipacion_horas, 'type="number" min="0" max="72"')}
         </div>
-        ${campo("a-envio", "Costo del envío (0 = «se coordina»)", ajustes.costo_envio, 'type="number" min="0" step="1"')}
+      </fieldset>
+      <fieldset><legend>Pagos</legend>
+        ${campo("a-sena", 'Seña si paga en efectivo <span class="ayuda">% del total que transfiere antes</span>', ajustes.sena_porcentaje ?? 50, 'type="number" min="0" max="100" step="1"')}
+        <label>Datos para transferir <span class="ayuda">alias, CBU/CVU y titular: se le muestran al cliente y van en el mensaje de WhatsApp</span>
+          <textarea id="a-transf" rows="3" maxlength="300" placeholder="Alias: ichiro.sushiya&#10;CVU: 0000003100...&#10;Titular: ...">${esc(ajustes.datos_transferencia || "")}</textarea></label>
+      </fieldset>
+      <fieldset><legend>Zonas de envío</legend>
+        <p class="ayuda">Las zonas que el cliente puede elegir y lo que cuesta el envío a cada una (0 = «se coordina»).</p>
+        <div class="zonas" id="a-zonas">${(ajustes.zonas || []).map(filaZona).join("")}</div>
+        <button type="button" class="btn" id="a-zona-mas">+ Zona</button>
       </fieldset>
       <fieldset><legend>Horarios que se pueden elegir</legend>
         ${campo("a-fm", 'Mediodía <span class="ayuda">separados por coma, ej: 12:00, 12:30, 13:00</span>', (ajustes.franjas_mediodia || []).join(", "))}
@@ -745,7 +788,10 @@
     const franjas = (id) => v(id).split(/[,\s]+/).filter(Boolean).map((h) => h.replace(/^(\d):/, "0$1:"));
     const datos = {
       pedidos_mediodia: $("#a-pm").checked, pedidos_finde: $("#a-pf").checked,
-      dias_adelante: Number(v("a-dias")), anticipacion_horas: Number(v("a-antic")), costo_envio: Number(v("a-envio")),
+      dias_adelante: Number(v("a-dias")), anticipacion_horas: Number(v("a-antic")),
+      sena_porcentaje: Number(v("a-sena")), datos_transferencia: v("a-transf"),
+      zonas: [...document.querySelectorAll("#a-zonas .zona")].map((f) => ({ nombre: $(".z-nom", f).value.trim(), costo: Number($(".z-costo", f).value || 0) }))
+        .filter((z) => z.nombre),
       franjas_mediodia: franjas("a-fm"), franjas_finde: franjas("a-ff"),
       textos: {
         mediodia_dias: v("t-md"), mediodia_titulo: v("t-mt"), mediodia_horario: v("t-mh"), mediodia_etiqueta: v("t-me"),

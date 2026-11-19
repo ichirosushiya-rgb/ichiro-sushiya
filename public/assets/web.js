@@ -284,15 +284,41 @@
     sel.innerHTML = lista.map((h) => `<option>${h}</option>`).join("");
     if (lista.includes(antes)) sel.value = antes;
   }
+  // Zonas de envío (Panel → Ajustes): cada una con su costo. Sin zonas cargadas, se escribe a mano.
+  const zonas = () => (Array.isArray(C.ajustes.zonas) ? C.ajustes.zonas : []);
+  const porcentajeSena = () => { const n = Number(C.ajustes.sena_porcentaje); return Number.isFinite(n) ? n : 50; };
+  function pintarZonas() {
+    const campo = $("#co-zona-campo");
+    if (campo.dataset.listo) return;
+    campo.dataset.listo = "1";
+    campo.innerHTML = zonas().length
+      ? `<select id="co-zona"><option value="">Elegí tu zona…</option>${zonas().map((z) =>
+          `<option value="${esc(z.nombre)}">${esc(z.nombre)}${z.costo ? ` (+${precio(z.costo)})` : ""}</option>`).join("")}</select>`
+      : `<input id="co-zona" maxlength="40" placeholder="Barrio o localidad">`;
+    $("#co-zona").addEventListener("change", pintarTotal);
+  }
+  function costoEnvio() {
+    if (modalidad() !== "envio") return 0;
+    if (!zonas().length) return Number(C.ajustes.costo_envio) || 0;
+    const z = zonas().find((x) => x.nombre === $("#co-zona").value);
+    return z ? Number(z.costo) || 0 : 0;
+  }
   function pintarTotal() {
     const sub = seleccion().reduce((s, x) => s + x.cant * x.p.precio, 0);
-    const costo = Number(C.ajustes.costo_envio) || 0;
-    const envio = modalidad() === "envio" ? costo : 0;
-    $("#co-envio-precio").textContent = costo ? `(+${precio(costo)})` : "(se coordina)";
-    $("#co-total").textContent = precio(sub + envio);
+    const total = sub + costoEnvio();
+    const costos = zonas().length ? zonas().map((z) => Number(z.costo) || 0) : [Number(C.ajustes.costo_envio) || 0];
+    const minimo = Math.min(...costos), maximo = Math.max(...costos);
+    $("#co-envio-precio").textContent = !maximo ? "(se coordina)" : minimo === maximo ? `(+${precio(minimo)})` : "(según la zona)";
     $("#co-dir-wrap").hidden = modalidad() !== "envio";
+    $("#co-sena-txt").textContent = `(seña del ${porcentajeSena()}% por transferencia)`;
+    $("#co-total").textContent = precio(total);
+    const sena = pago() === "transferencia" ? total : Math.ceil((total * porcentajeSena()) / 100);
+    $("#co-pago-detalle").textContent = pago() === "transferencia"
+      ? `Transferís ${precio(total)} cuando te confirmemos`
+      : `Seña de ${precio(sena)} por transferencia y ${precio(total - sena)} en efectivo al recibir`;
   }
   const modalidad = () => dlg.querySelector("input[name=modalidad]:checked").value;
+  const pago = () => dlg.querySelector("input[name=pago]:checked").value;
   function mostrarError(txt) {
     const e = $("#co-error");
     e.textContent = txt || ""; e.hidden = !txt;
@@ -310,15 +336,39 @@
       if (guardado.telefono && !$("#co-telefono").value) $("#co-telefono").value = guardado.telefono;
       if (guardado.direccion && !$("#co-direccion").value) $("#co-direccion").value = guardado.direccion;
     } catch { /* sin almacenamiento */ }
+    pintarZonas();
+    try {
+      const g = JSON.parse(localStorage.getItem("ichiro-datos") || "{}");
+      if (g.zona && !$("#co-zona").value && (!zonas().length || zonas().some((z) => z.nombre === g.zona))) $("#co-zona").value = g.zona;
+    } catch { /* */ }
     pintarFechas();
     pintarTotal();
     dlg.showModal();
   }
   $("#co-fecha").addEventListener("change", pintarHorarios);
-  dlg.querySelectorAll("input[name=modalidad]").forEach((r) => r.addEventListener("change", pintarTotal));
+  dlg.querySelectorAll("input[name=modalidad], input[name=pago]").forEach((r) => r.addEventListener("change", pintarTotal));
   $("#co-cerrar").onclick = () => dlg.close();
   $("#co-listo-cerrar").onclick = () => dlg.close();
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+
+  // Después de pedir: cuánto transferir, a dónde, y el botón para mandar el comprobante
+  function pintarTransferencia(p) {
+    const caja = $("#co-transferir");
+    const datosT = (C.ajustes.datos_transferencia || "").trim();
+    if (!p.id || !p.sena) { caja.hidden = true; return; }
+    caja.hidden = false;
+    $("#co-monto").innerHTML = p.pago === "efectivo"
+      ? `Para reservarlo, transferí la <b>seña de ${precio(p.sena)}</b>. Los otros ${precio(p.saldo)} los pagás en efectivo al recibir.`
+      : `Transferí <b>${precio(p.sena)}</b> para dejarlo pago.`;
+    $("#co-datos-transf").textContent = datosT || "Te pasamos los datos para transferir por WhatsApp.";
+    $("#co-copiar").hidden = !datosT;
+    const wa = ajustes().whatsapp || L.whatsapp;
+    $("#co-comprobante").href = `https://wa.me/${wa}?text=` + encodeURIComponent(`¡Hola! Te mando el comprobante de ${precio(p.sena)} del pedido #${p.id}.`);
+  }
+  $("#co-copiar").onclick = async () => {
+    try { await navigator.clipboard.writeText($("#co-datos-transf").textContent); aviso("Datos copiados"); }
+    catch { aviso("No se pudo copiar: mantené apretado el texto para copiarlo"); }
+  };
 
   $("#co-form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -329,7 +379,9 @@
       fecha: $("#co-fecha").value,
       horario: $("#co-horario").value,
       modalidad: modalidad(),
+      zona: modalidad() === "envio" ? $("#co-zona").value.trim() : "",
       direccion: $("#co-direccion").value.trim(),
+      pago: pago(),
       notas: $("#co-notas").value.trim(),
       web: $("#co-web").value,
       items: seleccion().map((x) => ({ id: x.p.id, cantidad: x.cant })),
@@ -337,6 +389,7 @@
     if (!datos.fecha || !datos.horario) return mostrarError("Elegí el día y el horario.");
     if (datos.nombre.length < 2) return mostrarError("Escribí tu nombre.");
     if (datos.telefono.replace(/\D/g, "").length < 8) return mostrarError("Escribí tu WhatsApp con el código de área.");
+    if (datos.modalidad === "envio" && datos.zona.length < 2) return mostrarError("Elegí la zona de entrega.");
     if (datos.modalidad === "envio" && datos.direccion.length < 5) return mostrarError("Escribí la dirección de entrega.");
 
     const boton = $("#co-enviar");
@@ -345,11 +398,12 @@
       const r = await fetch("/api/pedido", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) });
       const res = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(res.error || "No pudimos tomar el pedido. Probá de nuevo.");
-      try { localStorage.setItem("ichiro-datos", JSON.stringify({ nombre: datos.nombre, telefono: datos.telefono, direccion: datos.direccion })); } catch { /* */ }
+      try { localStorage.setItem("ichiro-datos", JSON.stringify({ nombre: datos.nombre, telefono: datos.telefono, direccion: datos.direccion, zona: datos.zona })); } catch { /* */ }
       const p = res.pedido || {};
       $("#co-listo-txt").textContent = p.id
         ? `Tu pedido #${p.id} es para el ${fechaLarga(p.fecha).toLowerCase()} a las ${p.horario} (${precio(p.total)}). Te escribimos por WhatsApp para confirmarlo.`
         : "Te escribimos por WhatsApp para confirmarlo.";
+      pintarTransferencia(p);
       $("#co-form").hidden = true;
       $("#co-listo").hidden = false;
       for (const k in carrito) delete carrito[k];

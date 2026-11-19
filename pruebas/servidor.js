@@ -12,7 +12,8 @@ const ASSETS = {
     if (ruta.includes("..")) return new Response("No", { status: 400 });
     try {
       const datos = await Deno.readFile(new URL("." + ruta, raiz));
-      return new Response(datos, { headers: { "Content-Type": TIPOS[ruta.split(".").pop()] || "application/octet-stream" } });
+      // Sin caché: en las pruebas siempre se ve lo último que se guardó (Cloudflare ya revalida solo)
+      return new Response(datos, { headers: { "Content-Type": TIPOS[ruta.split(".").pop()] || "application/octet-stream", "Cache-Control": "no-cache" } });
     } catch {
       // Como Cloudflare: /admin → /admin/
       try { await Deno.stat(new URL("." + ruta + "/index.html", raiz)); return Response.redirect(new URL(ruta + "/", req.url), 307); } catch { /* */ }

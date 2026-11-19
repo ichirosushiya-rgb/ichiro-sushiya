@@ -213,6 +213,15 @@
   .co-listo p { max-width: 380px; line-height: 1.5; color: #4a4a72; }
   .co-check { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--navy); color: #fff; font-size: 30px; }
   .co-listo .btn { background: var(--navy); color: #fff; border: 0; cursor: pointer; }
+  .co-envio { grid-template-columns: 1fr 1.6fr; }
+  .co-pago-detalle { display: block; margin-top: 2px; font-size: 12.5px; color: #4a4a72; max-width: 260px; line-height: 1.35; }
+  .co-transferir { width: 100%; max-width: 400px; display: grid; gap: 10px; background: #f5f4f8; border-radius: 16px; padding: 16px; text-align: left; }
+  .co-transferir .co-monto { color: var(--navy); font-size: 15px; }
+  .co-transferir pre { margin: 0; white-space: pre-wrap; font: 500 15px/1.5 var(--font-body); color: var(--navy); background: #fff; border-radius: 10px; padding: 10px 12px; }
+  .co-transferir .btn { justify-content: center; cursor: pointer; }
+  .co-listo .co-copiar { background: #fff; color: var(--navy); border: 1px solid rgba(6,6,58,.2); }
+  .co-listo .co-comprobante { background: #25d366; color: #fff; border: 0; }
+  .co-comprobante svg { width: 18px; height: 18px; }
   .toast { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); z-index: 50; width: min(calc(100% - 32px), 460px); padding: 14px 18px; border-radius: 14px; background: var(--lila-claro); color: var(--navy); font-size: 14.5px; box-shadow: 0 18px 50px rgba(0,0,0,.35); }
 
   @media (max-width: 820px) {
@@ -225,7 +234,7 @@
     .horarios { grid-template-columns: 1fr; padding: 22px 20px 18px; }
     .horarios .turno + .turno { border-left: 0; padding-left: 0; border-top: 1px solid rgba(6,6,58,.18); margin-top: 18px; padding-top: 18px; }
     .pedido-barra .ver { display: none; }
-    .co-grid { grid-template-columns: 1fr; }
+    .co-grid, .co-envio { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -336,7 +345,15 @@
       <label><input type="radio" name="modalidad" value="retiro" checked> Retiro en el local</label>
       <label><input type="radio" name="modalidad" value="envio"> Envío <small id="co-envio-precio"></small></label>
     </fieldset>
-    <label id="co-dir-wrap" hidden>Dirección de entrega<input id="co-direccion" autocomplete="street-address" maxlength="200" placeholder="Calle, número, depto, entre calles"></label>
+    <div class="co-grid co-envio" id="co-dir-wrap" hidden>
+      <label>Zona<span id="co-zona-campo"></span></label>
+      <label>Dirección de entrega<input id="co-direccion" autocomplete="street-address" maxlength="200" placeholder="Calle, número, depto, entre calles"></label>
+    </div>
+    <fieldset class="co-modo" id="co-pago">
+      <legend>¿Cómo pagás?</legend>
+      <label><input type="radio" name="pago" value="transferencia" checked> Transferencia <small>(el 100%)</small></label>
+      <label><input type="radio" name="pago" value="efectivo"> Efectivo <small id="co-sena-txt">(seña del 50% por transferencia)</small></label>
+    </fieldset>
     <div class="co-grid">
       <label>Nombre<input id="co-nombre" autocomplete="name" maxlength="80" required></label>
       <label>WhatsApp<input id="co-telefono" type="tel" autocomplete="tel" maxlength="20" placeholder="221 555-1234" required></label>
@@ -345,7 +362,7 @@
     <input class="co-trampa" id="co-web" name="web" tabindex="-1" autocomplete="off" aria-hidden="true">
     <p class="co-error" id="co-error" role="alert" hidden></p>
     <div class="co-pie">
-      <div><small>Total</small><b id="co-total"></b></div>
+      <div><small>Total</small><b id="co-total"></b><span class="co-pago-detalle" id="co-pago-detalle"></span></div>
       <button type="submit" class="btn btn-1 co-enviar" id="co-enviar">Hacer pedido</button>
     </div>
   </form>
@@ -353,6 +370,12 @@
     <div class="co-check">✓</div>
     <h2>¡Pedido recibido!</h2>
     <p id="co-listo-txt"></p>
+    <div class="co-transferir" id="co-transferir" hidden>
+      <p class="co-monto" id="co-monto"></p>
+      <pre id="co-datos-transf"></pre>
+      <button type="button" class="btn co-copiar" id="co-copiar">Copiar datos</button>
+      <a class="btn co-comprobante" id="co-comprobante" href="#" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>Mandar el comprobante</a>
+    </div>
     <button type="button" class="btn btn-1" id="co-listo-cerrar">Listo</button>
   </div>
 </dialog>

@@ -64,6 +64,10 @@ const VALIDAR_AJUSTE = {
   instagram: (v) => typeof v === "string" && /^[A-Za-z0-9._]{0,30}$/.test(v),
   mail_avisos: (v) => typeof v === "string" && (v === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)),
   aviso: (v) => texto(v, 200),
+  zonas: (v) => Array.isArray(v) && v.length <= 40 && v.every((z) => z && texto(z.nombre, 40, 2) && entero(z.costo, 0, 1000000))
+    && new Set(v.map((z) => z.nombre.trim().toLowerCase())).size === v.length,
+  datos_transferencia: (v) => texto(v, 300),
+  sena_porcentaje: (v) => entero(v, 0, 100),
   textos: (v) => v && typeof v === "object" && !Array.isArray(v) &&
     Object.keys(v).every((k) => CLAVES_TEXTOS.includes(k) && texto(v[k], 60)),
 };
@@ -115,7 +119,7 @@ async function api(req, env, ctx, url) {
     if (p.web) return json({ ok: true }); // campo trampa: lo completan solo los robots
     const datos = {
       nombre: p.nombre, telefono: p.telefono, fecha: p.fecha, horario: p.horario,
-      modalidad: p.modalidad, direccion: p.direccion, notas: p.notas,
+      modalidad: p.modalidad, zona: p.zona, direccion: p.direccion, pago: p.pago, notas: p.notas,
       items: Array.isArray(p.items) ? p.items.slice(0, 60).map((i) => ({ id: i.id, cantidad: i.cantidad })) : [],
     };
     const pedido = await rpc(env, "crear_pedido", { p: datos });
@@ -123,7 +127,8 @@ async function api(req, env, ctx, url) {
       const casilla = (await sb(env, "ajustes?clave=eq.mail_avisos&select=valor"))[0]?.valor;
       await avisarPedido(env, pedido, casilla, url.origin);
     })().catch((e) => console.error("aviso del pedido:", e.message)));
-    return json({ ok: true, pedido: { id: pedido.id, fecha: pedido.fecha, horario: pedido.horario, total: pedido.total } });
+    return json({ ok: true, pedido: { id: pedido.id, fecha: pedido.fecha, horario: pedido.horario, total: pedido.total,
+      pago: pedido.pago, sena: pedido.sena, saldo: pedido.saldo } });
   }
 
   // ---------- Panel
@@ -161,6 +166,15 @@ async function api(req, env, ctx, url) {
     const b = await leerJson(req);
     if (!b || !entero(b.id, 1, 1e15)) return error("Pedido inválido");
     return json(await rpc(env, "cambiar_estado", { p_id: b.id, p_estado: b.estado }));
+  }
+
+  // Marca (o desmarca) que llegó la transferencia del pedido
+  if (a === "pago" && metodo === "POST") {
+    const b = await leerJson(req);
+    if (!b || !entero(b.id, 1, 1e15) || typeof b.recibido !== "boolean") return error("Datos inválidos");
+    const fila = await sb(env, `pedidos?id=eq.${b.id}`, { method: "PATCH", body: { pago_recibido: b.recibido, actualizado: new Date().toISOString() }, prefer: "return=representation" });
+    if (!fila?.length) return error("No encontré el pedido", 404);
+    return json(fila[0]);
   }
 
   if (a === "dia" && metodo === "GET") {
@@ -278,6 +292,7 @@ async function api(req, env, ctx, url) {
       if (!validar) return error(`Ajuste desconocido: ${clave}`);
       let v = valor;
       if (clave.startsWith("franjas_") && Array.isArray(v)) v = [...new Set(v.map((h) => String(h).trim()))].sort();
+      if (clave === "zonas" && Array.isArray(v)) v = v.map((z) => ({ nombre: String(z?.nombre ?? "").trim(), costo: Number(z?.costo) }));
       if (typeof v === "string") v = v.trim();
       if (!validar(v)) return error(`Revisá «${clave.replace(/_/g, " ")}»`);
       filas.push({ clave, valor: v });

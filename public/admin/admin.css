@@ -232,3 +232,15 @@ input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--navy); }
 }
 
 .filtros.medida button { padding: 6px 12px; font-size: 13px; }
+
+/* ---------- Pago y zonas ---------- */
+.ped .pago { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 12px; background: var(--alerta-fondo); color: var(--alerta); font-size: 13.5px; }
+.ped .pago.ok { background: var(--ok-fondo); color: var(--ok); }
+.ped .pago .btn { padding: 6px 12px; font-size: 13px; }
+.zonas { display: grid; gap: 8px; }
+.zona { display: grid; grid-template-columns: 1fr 140px auto; gap: 8px; align-items: center; }
+.zona .z-precio { position: relative; }
+.zona .z-precio::before { content: "$"; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--suave); }
+.zona .z-costo { padding-left: 22px; }
+.zona .z-sacar { padding: 8px 12px; }
+.ajustes p.ayuda { font-size: 13px; color: var(--suave); }
