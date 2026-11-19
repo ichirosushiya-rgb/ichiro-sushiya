@@ -9,7 +9,7 @@ keep_vars = true
 [vars]
 # La dirección del proyecto de Supabase (no es secreta). Las claves van como Secrets:
 #   SUPABASE_SECRET_KEY  ·  ADMIN_TOKEN (contraseña del panel)  ·  BREVO_API_KEY (mails)
-SUPABASE_URL = ""
+SUPABASE_URL = "https://puiteytwdcrvvwlcxgdx.supabase.co"
 
 [assets]
 directory = "public"
