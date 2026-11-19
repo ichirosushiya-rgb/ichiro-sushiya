@@ -608,11 +608,15 @@
         </details>
       </div>`;
 
-    const productos = `
+    ultimaMetrica = m;
+    const productos = `<div class="grafico ancho" id="g-productos">${bloqueProductos(m)}</div>`;
+
+    const categorias = `
       <div class="grafico">
-        <h3>Lo más pedido</h3>
-        <p class="sub">Unidades vendidas · el número de la derecha es la cantidad</p>
-        ${barras(m.productos.map((p) => ({ nombre: p.nombre, sub: p.categoria, valor: p.cantidad, tip: `<b>${p.categoria} ${p.nombre}</b>${p.cantidad} u. · ${precio(p.ventas)}` })), 0, (f) => f.valor)}
+        <h3>Ventas por categoría</h3>
+        <p class="sub">Cuánto vendió cada tipo de producto y qué parte del total es</p>
+        ${barras(m.categorias.map((c) => ({ nombre: c.categoria, valor: c.ventas, tip: `<b>${c.categoria}</b>${c.cantidad} u. · ${precio(c.ventas)}` })), 0,
+          (f) => `${precio(f.valor)} · ${pct(f.valor, totalItems(m))}`)}
       </div>`;
 
     const turnoFilas = [["mediodia", "Pokes (mediodía)"], ["finde", "Finde"]].map(([k, n]) => ({
@@ -643,8 +647,38 @@
         ${barras(m.por_dia_semana.map((d) => ({ nombre: DIAS_SEMANA[d.dia], valor: d.ventas, tip: `<b>${DIAS_SEMANA[d.dia]}</b>${d.pedidos} pedidos · ${precio(d.ventas)}` })), 0, (f) => precio(f.valor))}
       </div>`;
 
-    caja.innerHTML = kpis + `<div class="graficos">${columnas}${productos}${reparto}${horarios}${semana}</div>`;
+    caja.innerHTML = kpis + `<div class="graficos">${columnas}${productos}${categorias}${reparto}${horarios}${semana}</div>`;
   }
+
+  // Ventas por producto: en $ o en unidades, los 12 primeros en el gráfico y todos en la tabla
+  let ultimaMetrica = null;
+  let medidaProd = "ventas";
+  const totalItems = (m) => m.productos.reduce((s, p) => s + p.ventas, 0);
+  function bloqueProductos(m) {
+    const orden = [...m.productos].sort((a, b) => b[medidaProd] - a[medidaProd]);
+    const total = totalItems(m);
+    return `
+      <div class="caja-head" style="margin-bottom:2px">
+        <h3>Ventas por producto</h3>
+        <div class="filtros medida" style="margin:0;padding:0">
+          <button data-medida="ventas" aria-pressed="${medidaProd === "ventas"}">En $</button>
+          <button data-medida="cantidad" aria-pressed="${medidaProd === "cantidad"}">En unidades</button>
+        </div>
+      </div>
+      <p class="sub">${medidaProd === "ventas" ? "Lo que facturó cada producto" : "Cuántas unidades se vendieron de cada producto"}${orden.length > 12 ? " · los 12 primeros (todos en la tabla de abajo)" : ""}</p>
+      ${barras(orden.slice(0, 12).map((p) => ({ nombre: p.nombre, sub: p.categoria, valor: p[medidaProd], p,
+        tip: `<b>${p.categoria} ${p.nombre}</b>${p.cantidad} u. · ${precio(p.ventas)} · ${pct(p.ventas, total)} del total` })), 0,
+        (f) => medidaProd === "ventas" ? precio(f.valor) : `${f.valor} u.`)}
+      <details><summary>Ver todos los productos (${orden.length})</summary>
+        <table><thead><tr><th>Producto</th><th>Categoría</th><th class="n">Unidades</th><th class="n">Ventas</th><th class="n">% del total</th></tr></thead>
+        <tbody>${orden.map((p) => `<tr><td>${esc(p.nombre)}</td><td>${esc(p.categoria)}</td><td class="n">${p.cantidad}</td><td class="n">${precio(p.ventas)}</td><td class="n">${pct(p.ventas, total)}</td></tr>`).join("")}</tbody></table>
+      </details>`;
+  }
+  $("#m-contenido").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-medida]"); if (!b || !ultimaMetrica) return;
+    medidaProd = b.dataset.medida;
+    $("#g-productos").innerHTML = bloqueProductos(ultimaMetrica);
+  });
 
   // Un solo cartelito que sigue al mouse (o aparece al tocar en el celular)
   const tip = $("#tip");

@@ -230,3 +230,5 @@ input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--navy); }
   .graficos { grid-template-columns: 1fr; }
   .periodo .rango { flex-basis: 100%; }
 }
+
+.filtros.medida button { padding: 6px 12px; font-size: 13px; }

@@ -187,7 +187,26 @@ async function api(req, env, ctx, url) {
     const desde = q.get("desde"), hasta = q.get("hasta");
     if (!FECHA.test(desde || "") || !FECHA.test(hasta || "") || desde > hasta) return error("Elegí un período válido");
     if ((new Date(hasta) - new Date(desde)) / 864e5 > 400) return error("El período puede ser de hasta un año");
-    return json(await rpc(env, "metricas", { p_desde: desde, p_hasta: hasta }));
+    const [m, vendidos] = await Promise.all([
+      rpc(env, "metricas", { p_desde: desde, p_hasta: hasta }),
+      sb(env, `pedidos?select=items&estado=in.(confirmado,entregado)&fecha=gte.${desde}&fecha=lte.${hasta}&limit=20000`),
+    ]);
+    // Ventas por producto y por categoría (todos, no solo los primeros)
+    const prod = new Map(), cat = new Map();
+    for (const { items } of vendidos) {
+      for (const i of items) {
+        const k = `${i.categoria}\u0000${i.nombre}`;
+        const p = prod.get(k) || { nombre: i.nombre, categoria: i.categoria, cantidad: 0, ventas: 0 };
+        p.cantidad += i.cantidad; p.ventas += i.precio * i.cantidad;
+        prod.set(k, p);
+        const c = cat.get(i.categoria) || { categoria: i.categoria, cantidad: 0, ventas: 0 };
+        c.cantidad += i.cantidad; c.ventas += i.precio * i.cantidad;
+        cat.set(i.categoria, c);
+      }
+    }
+    m.productos = [...prod.values()].sort((a, b) => b.ventas - a.ventas || b.cantidad - a.cantidad);
+    m.categorias = [...cat.values()].sort((a, b) => b.ventas - a.ventas);
+    return json(m);
   }
 
   if (a === "carta" && metodo === "GET") {
