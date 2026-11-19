@@ -105,6 +105,20 @@
   const tabs = $("#tabs");
   const grid = $("#grid");
 
+  function pintarPie() {
+    $("#pie-carta").innerHTML = categorias().map((c) => `<li><a href="#sec-${esc(c.id)}" data-cat="${esc(c.id)}">${esc(c.nombre)}</a></li>`).join("")
+      || `<li><a href="#carta">Ver la carta</a></li>`;
+    $("#anio").textContent = new Date().getFullYear();
+  }
+  // Un link del pie a una categoría: muestra «Todo» para que esa sección exista y baja hasta ella
+  $("#pie-carta").addEventListener("click", (e) => {
+    const a = e.target.closest("a[data-cat]"); if (!a) return;
+    e.preventDefault();
+    filtro = "todo";
+    pintarTabs(); pintar();
+    document.getElementById("sec-" + a.dataset.cat)?.scrollIntoView({ behavior: "smooth" });
+  });
+
   function pintarTabs() {
     const cats = categorias();
     if (filtro !== "todo" && !cats.some((c) => String(c.id) === filtro)) filtro = "todo";
@@ -208,6 +222,7 @@
     const cant = sel.reduce((s, x) => s + x.cant, 0);
     const total = sel.reduce((s, x) => s + x.cant * x.p.precio, 0);
     barra.classList.toggle("visible", cant > 0);
+    $("#wa-flota").classList.toggle("oculta", cant > 0 || window.scrollY <= 80);
     if (!cant) barra.classList.remove("abierto");
     $("#res-cant").textContent = cant + (cant === 1 ? " producto" : " productos");
     $("#res-total").textContent = precio(total);
@@ -339,7 +354,7 @@
       $("#co-listo").hidden = false;
       for (const k in carrito) delete carrito[k];
       await cargar();
-      pintarTabs(); pintar(); actualizar();
+      pintarTabs(); pintarPie(); pintar(); actualizar();
     } catch (err) {
       mostrarError(err.message);
       await cargar(); // el stock pudo cambiar: se recalcula lo que se puede pedir
@@ -352,12 +367,18 @@
 
   // La flecha «Bajá para pedir» se va apenas se empieza a bajar
   const flecha = $("#bajar");
-  const mirarFlecha = () => flecha.classList.toggle("oculta", window.scrollY > 80);
+  // Arriba se ve la flecha; al bajar se va y aparece el botón de WhatsApp (salvo que esté la barra del pedido)
+  const mirarFlecha = () => {
+    const arriba = window.scrollY <= 80;
+    flecha.classList.toggle("oculta", !arriba);
+    $("#wa-flota").classList.toggle("oculta", arriba || barra.classList.contains("visible"));
+  };
   window.addEventListener("scroll", mirarFlecha, { passive: true });
   mirarFlecha();
 
   // ---------------------------------------------------------------- Arranque
   pintarTextos();
+  pintarPie();
   pintarTabs();
   pintar();
   actualizar();
