@@ -33,7 +33,8 @@ create table productos (
   descripcion   text    not null default '' check (length(descripcion) <= 300),
   precio        integer not null check (precio >= 0),
   activo        boolean not null default true,
-  orden         integer not null default 0
+  orden         integer not null default 0,
+  foto          text    not null default '' check (length(foto) <= 500)   -- dirección pública en Storage
 );
 create index productos_categoria on productos (categoria_id);
 
@@ -125,7 +126,8 @@ begin
                'id', c.id, 'nombre', c.nombre, 'jp', c.jp, 'turno', c.turno,
                'productos', coalesce((
                  select jsonb_agg(jsonb_build_object('id', p.id, 'nombre', p.nombre,
-                                                     'descripcion', p.descripcion, 'precio', p.precio)
+                                                     'descripcion', p.descripcion, 'precio', p.precio,
+                                                     'foto', p.foto)
                                   order by p.orden, p.id)
                  from productos p where p.categoria_id = c.id and p.activo), '[]'::jsonb))
              order by c.orden, c.id)
@@ -343,6 +345,15 @@ begin
   select p_hasta, producto_id, stock from disponibilidad where fecha = p_desde
   on conflict (fecha, producto_id) do update set stock = excluded.stock;
   return dia_admin(p_hasta);
+end $$;
+
+-- Fotos de los productos: carpeta pública de Storage (en la base local de pruebas no existe)
+do $$ begin
+  if to_regclass('storage.buckets') is not null then
+    insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+    values ('fotos', 'fotos', true, 3145728, array['image/jpeg', 'image/png', 'image/webp'])
+    on conflict (id) do update set public = true;
+  end if;
 end $$;
 
 -- Las funciones solo las usa el Worker

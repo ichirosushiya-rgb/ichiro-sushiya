@@ -68,6 +68,10 @@ const VALIDAR_AJUSTE = {
     Object.keys(v).every((k) => CLAVES_TEXTOS.includes(k) && texto(v[k], 60)),
 };
 
+// Storage de Supabase (fotos). SUPABASE_STORAGE_URL solo existe en las pruebas locales.
+const storageBase = (env) => env.SUPABASE_STORAGE_URL || (env.SUPABASE_URL || "").replace(/\/$/, "") + "/storage/v1";
+const carpetaFotos = (env) => storageBase(env) + "/object/public/fotos/";
+
 function validarProducto(p) {
   if (!entero(p.categoria_id, 1, 1e12)) return "Elegí la categoría";
   if (!texto(p.nombre, 80, 1)) return "El nombre tiene que tener entre 1 y 80 letras";
@@ -75,6 +79,9 @@ function validarProducto(p) {
   if (!entero(p.precio, 0, 10000000)) return "Revisá el precio (número entero, sin puntos)";
   if (typeof p.activo !== "boolean") return "Falta si está activo";
   if (!entero(p.orden ?? 0, -1000, 100000)) return "Revisá el orden";
+  if (p.foto !== undefined && p.foto !== "" && !(typeof p.foto === "string" && p.foto.length <= 500 && p.foto.startsWith(p._carpeta))) {
+    return "La foto no es válida: volvé a subirla";
+  }
   return null;
 }
 function validarCategoria(c) {
@@ -184,6 +191,29 @@ async function api(req, env, ctx, url) {
     return json({ categorias, productos });
   }
 
+  // Sube una foto (el panel ya la achica a ~900 px) y devuelve su dirección pública
+  if (a === "foto" && metodo === "POST") {
+    const tipo = (req.headers.get("content-type") || "").split(";")[0];
+    const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[tipo];
+    if (!ext) return error("La foto tiene que ser JPG, PNG o WebP");
+    const datos = await req.arrayBuffer();
+    if (!datos.byteLength || datos.byteLength > 3 * 1024 * 1024) return error("La foto es muy pesada (máximo 3 MB)");
+    const nombre = `p-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const clave = env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
+    const res = await fetch(`${storageBase(env)}/object/fotos/${nombre}`, {
+      method: "POST",
+      headers: { apikey: clave, Authorization: `Bearer ${clave}`, "Content-Type": tipo, "x-upsert": "true", "cache-control": "31536000" },
+      body: datos,
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      console.error("foto:", res.status, t);
+      if (/bucket not found/i.test(t)) return error("Falta crear la carpeta de fotos: correr supabase/002_fotos.sql en Supabase", 503);
+      return error("No se pudo guardar la foto. Probá de nuevo.", 502);
+    }
+    return json({ url: carpetaFotos(env) + nombre });
+  }
+
   if (a === "producto" || a === "categoria") {
     const tabla = a === "producto" ? "productos" : "categorias";
     if (metodo === "DELETE") {
@@ -196,9 +226,10 @@ async function api(req, env, ctx, url) {
       const b = await leerJson(req);
       if (!b) return error("Datos inválidos");
       const campos = a === "producto"
-        ? { categoria_id: b.categoria_id, nombre: b.nombre?.trim(), descripcion: (b.descripcion ?? "").trim(), precio: b.precio, activo: b.activo, orden: b.orden ?? 0 }
+        ? { categoria_id: b.categoria_id, nombre: b.nombre?.trim(), descripcion: (b.descripcion ?? "").trim(), precio: b.precio, activo: b.activo, orden: b.orden ?? 0,
+            ...(b.foto !== undefined ? { foto: b.foto } : {}) }
         : { nombre: b.nombre?.trim(), jp: (b.jp ?? "").trim(), turno: b.turno, activa: b.activa, orden: b.orden ?? 0 };
-      const problema = a === "producto" ? validarProducto(campos) : validarCategoria(campos);
+      const problema = a === "producto" ? validarProducto({ ...campos, _carpeta: carpetaFotos(env) }) : validarCategoria(campos);
       if (problema) return error(problema);
       const fila = b.id
         ? await sb(env, `${tabla}?id=eq.${Number(b.id)}`, { method: "PATCH", body: campos, prefer: "return=representation" })
@@ -241,6 +272,7 @@ function respuestaDeError(err) {
     if (err.codigo === "config") return error(err.message, 503);
     // Problemas de puesta en marcha: se dicen claros (no revelan nada secreto)
     if (err.status === 401 || err.status === 403) return error("La clave de Supabase (SUPABASE_SECRET_KEY) no es válida", 503);
+    if (err.codigo === "PGRST204") return error("Falta un cambio en la base: correr supabase/002_fotos.sql en Supabase", 503);
     if (err.codigo === "PGRST202" || err.codigo === "42P01" || err.codigo === "PGRST205") return error("Falta crear las tablas: correr supabase/schema.sql en Supabase", 503);
   }
   console.error("api:", err && err.message);

@@ -171,3 +171,12 @@ input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--navy); }
   .dlg-pie span { display: none; }
   .dlg-pie #dlg-borrar { grid-column: 1 / -1; order: 3; }
 }
+
+/* ---------- Fotos de productos ---------- */
+.foto-campo { display: grid; grid-template-columns: 110px 1fr; gap: 14px; align-items: center; }
+.foto-prev { width: 110px; height: 110px; border-radius: 14px; background: var(--fondo) center/cover no-repeat; border: 1px dashed var(--linea); display: grid; place-items: center; font-size: 12px; color: var(--suave); }
+.foto-botones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.foto-botones .ayuda { flex-basis: 100%; font-size: 13px; font-weight: 500; color: var(--suave); }
+.foto-botones .ayuda small { font-weight: 400; }
+.btn.subir { display: inline-flex; color: var(--texto); font-size: 14px; cursor: pointer; }
+.prod .nom .mini { float: left; width: 40px; height: 40px; border-radius: 8px; object-fit: cover; margin-right: 10px; }

@@ -30,7 +30,7 @@ s = b(hmac.new(sys.argv[1].encode(), f'{h}.{p}'.encode(), hashlib.sha256).digest
 print(f'{h}.{p}.{s}')" "$SECRETO")
 
 docker run -d --name ichiro-web --network ichiro-net -p 8787:8787 -v "$PWD":/app:ro \
-  -e SUPABASE_REST_URL="http://ichiro-rest:3000" -e SUPABASE_SECRET_KEY="$CLAVE" -e ADMIN_TOKEN="prueba-local-123" \
+  -e SUPABASE_REST_URL="http://ichiro-rest:3000" -e SUPABASE_STORAGE_URL="http://127.0.0.1:8787/__storage" -e SUPABASE_SECRET_KEY="$CLAVE" -e ADMIN_TOKEN="prueba-local-123" \
   denoland/deno:latest run --allow-net --allow-read=/app --allow-env /app/pruebas/servidor.js >/dev/null
 for i in $(seq 1 40); do curl -sf http://127.0.0.1:8787/api/carta >/dev/null 2>&1 && break; sleep 1; done
 echo "Web local: http://127.0.0.1:8787  ·  Panel: http://127.0.0.1:8787/admin/  (contraseña: prueba-local-123)"

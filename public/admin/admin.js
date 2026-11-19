@@ -326,7 +326,7 @@
         </div>
         ${prods.length ? prods.map((p) => `
           <div class="prod ${p.activo ? "" : "inactivo"}">
-            <span class="nom">${esc(p.nombre)}<small>${esc(p.descripcion)}</small></span>
+            <span class="nom">${p.foto ? `<img class="mini" src="${esc(p.foto)}" alt="" loading="lazy">` : ""}${esc(p.nombre)}<small>${esc(p.descripcion)}</small></span>
             <label class="precio"><input type="number" min="0" step="1" inputmode="numeric" value="${p.precio}" data-precio="${p.id}" aria-label="Precio de ${esc(p.nombre)}"></label>
             <label class="check activo-wrap"><input type="checkbox" data-activo="${p.id}" ${p.activo ? "checked" : ""}> Activo</label>
             <button class="editar" data-editar-prod="${p.id}">Editar</button>
@@ -391,7 +391,55 @@
     try { if (await alBorrar()) dlg.close(); } catch (err) { errorDialogo(err.message); }
   };
 
+  // ---------------------------------------------------------------- Fotos
+  let fotoNueva;      // undefined = no se tocó; "" = sacarla; url = la nueva
+  let subiendo = false;
+
+  // Achica la foto en el navegador (máx. 900 px, JPG) antes de subirla: pesa poco y carga rápido
+  async function achicar(archivo) {
+    const img = await createImageBitmap(archivo).catch(() => null);
+    if (!img) throw new Error("No pude abrir esa foto. Probá con un JPG o PNG.");
+    const escala = Math.min(1, 900 / Math.max(img.width, img.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.width * escala);
+    c.height = Math.round(img.height * escala);
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    return new Promise((ok) => c.toBlob(ok, "image/jpeg", 0.84));
+  }
+
+  document.addEventListener("change", conError(async (e) => {
+    if (e.target.id !== "f-foto" || !e.target.files[0]) return;
+    const prev = $("#f-foto-prev");
+    subiendo = true;
+    prev.textContent = "Subiendo…";
+    try {
+      const blob = await achicar(e.target.files[0]);
+      const r = await fetch("/api/admin/foto", { method: "POST", headers: { "X-Admin-Token": clave, "Content-Type": "image/jpeg" }, body: blob });
+      const res = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(res.error || "No se pudo subir la foto");
+      fotoNueva = res.url;
+      prev.textContent = "";
+      prev.style.backgroundImage = `url('${res.url}')`;
+      $("#f-foto-sacar").hidden = false;
+    } catch (err) {
+      prev.textContent = "Sin foto";
+      throw err;
+    } finally {
+      subiendo = false;
+      e.target.value = "";
+    }
+  }));
+  document.addEventListener("click", (e) => {
+    if (e.target.id !== "f-foto-sacar") return;
+    fotoNueva = "";
+    const prev = $("#f-foto-prev");
+    prev.style.backgroundImage = "";
+    prev.textContent = "Sin foto";
+    e.target.hidden = true;
+  });
+
   function editarProducto(p) {
+    fotoNueva = undefined;
     const opciones = carta.categorias.map((c) => `<option value="${c.id}" ${c.id === p.categoria_id ? "selected" : ""}>${esc(c.nombre)}</option>`).join("");
     abrirDialogo(p.id ? "Editar producto" : "Nuevo producto", `
       <label>Categoría<select id="f-cat">${opciones}</select></label>
@@ -401,11 +449,21 @@
         <label>Precio<input id="f-precio" type="number" min="0" step="1" inputmode="numeric" value="${p.precio}" required></label>
         <label>Orden<input id="f-orden" type="number" step="1" value="${p.orden ?? 0}"></label>
       </div>
+      <div class="foto-campo">
+        <div class="foto-prev" id="f-foto-prev" ${p.foto ? `style="background-image:url('${esc(p.foto)}')"` : ""}>${p.foto ? "" : "Sin foto"}</div>
+        <div class="foto-botones">
+          <span class="ayuda">Foto <small>(opcional: se ve a la derecha de la tarjeta)</small></span>
+          <label class="btn subir">Elegir foto<input type="file" id="f-foto" accept="image/*" hidden></label>
+          <button type="button" class="btn" id="f-foto-sacar" ${p.foto ? "" : "hidden"}>Sacar foto</button>
+        </div>
+      </div>
       <label class="check"><input type="checkbox" id="f-activo" ${p.activo ? "checked" : ""}> Se ve en la web</label>`,
       async () => {
+        if (subiendo) throw new Error("Esperá a que termine de subir la foto");
         const datos = {
           id: p.id, categoria_id: Number($("#f-cat").value), nombre: $("#f-nombre").value, descripcion: $("#f-desc").value,
           precio: Number($("#f-precio").value), orden: Number($("#f-orden").value) || 0, activo: $("#f-activo").checked,
+          ...(fotoNueva !== undefined ? { foto: fotoNueva } : {}),
         };
         if ($("#f-precio").value === "") throw new Error("Poné el precio");
         await guardarProducto(datos);

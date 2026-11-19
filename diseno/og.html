@@ -1,0 +1,24 @@
+<!doctype html>
+<!-- Imagen que aparece al compartir el link (1200 × 630). Se exporta con diseno/exportar.sh -->
+<html lang="es"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@500&family=Noto+Serif+JP:wght@300;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body { background: #06063a; color: #e6e2ec; display: flex; align-items: center; gap: 64px; padding: 0 90px; box-sizing: border-box; position: relative; font-family: "DM Sans", sans-serif; }
+  .koi { flex: none; width: 330px; height: 330px; border-radius: 50%; background: url(../public/assets/img/koi.jpg) center/cover; box-shadow: 0 0 0 1px rgba(179,172,189,.25), 0 0 0 18px rgba(179,172,189,.05); }
+  h1 { font: 400 112px/.9 "Instrument Serif", serif; letter-spacing: -.05em; margin: 0; white-space: nowrap; }
+  .lema { font: italic 34px/1.2 "Instrument Serif", serif; color: #b3acbd; margin: 18px 0 34px; }
+  .lema span { font: 300 26px "Noto Serif JP", serif; font-style: normal; letter-spacing: .1em; }
+  .chips { display: flex; gap: 12px; }
+  .chips b { font-weight: 500; font-size: 22px; padding: 10px 20px; border-radius: 999px; background: #e6e2ec; color: #06063a; }
+  .chips b + b { background: transparent; color: #e6e2ec; border: 1.5px solid rgba(230,226,236,.45); }
+  .kanji { position: absolute; right: 54px; top: 50%; transform: translateY(-50%); writing-mode: vertical-rl; font: 500 54px/1 "Noto Serif JP", serif; color: rgba(255,255,255,.14); letter-spacing: .08em; }
+</style></head><body>
+  <div class="koi"></div>
+  <div>
+    <h1>Ichiro Sushiya</h1>
+    <p class="lema">Dos hermanos unidos por la cocina y nuestro abuelo <span>おじいちゃん</span></p>
+    <div class="chips"><b>Pedí online</b><b>Pokes al mediodía · Sushi el finde</b></div>
+  </div>
+  <div class="kanji" lang="ja">一朗寿司屋</div>
+</body></html>

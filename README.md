@@ -24,6 +24,8 @@ Navegador ──> Worker de Cloudflare (src/worker.js) ──> Supabase (PostgRE
 | `src/worker.js` | Las rutas `/api/carta`, `/api/pedido` y `/api/admin/*` |
 | `src/supabase.js` · `src/mail.js` | Conexión con Supabase y el mail de aviso (Brevo) |
 | `supabase/schema.sql` | Tablas, reglas y la carta inicial. Se corre una vez |
+| `supabase/002_fotos.sql` | Fotos de los productos (columna y carpeta pública en Storage) |
+| `diseno/` | Favicon e imagen para compartir el link: se editan en HTML y se exportan con `diseno/exportar.sh` |
 | `pruebas/` | Copia local de todo en Docker, para probar sin tocar nada real |
 | `wrangler.toml` | Configuración de Cloudflare |
 
@@ -35,12 +37,15 @@ Navegador ──> Worker de Cloudflare (src/worker.js) ──> Supabase (PostgRE
   «Copiar de otro día» repite la carga de un día en otro.
 - **Stock.** Vacío = sin límite; 0 = agotado. Rechazar o cancelar un pedido devuelve el stock.
 - **Abrir y cerrar pedidos.** Los interruptores de arriba del panel cierran los pokes o el finde en toda la web.
+- **Fotos.** Cada producto puede tener foto (Carta → Editar → Elegir foto). El panel la achica antes de subirla
+  y en la web se ve a la derecha de la tarjeta, con el + encima.
 - **Pedidos.** Entran como *pendiente* y llega un mail. Al confirmarlos aparece el botón verde para avisarle al
   cliente por WhatsApp con el mensaje ya escrito.
 
 ## Puesta en marcha (una sola vez)
 
-1. **Supabase.** Crear el proyecto (región São Paulo). SQL Editor → pegar todo `supabase/schema.sql` → Run.
+1. **Supabase.** Crear el proyecto (región São Paulo). SQL Editor → pegar y correr, en orden, `supabase/schema.sql`
+   y `supabase/002_fotos.sql` (fotos de los productos).
 2. **Dirección del proyecto.** Supabase → Project Settings → Data API → *Project URL*. Va en `wrangler.toml`,
    en `SUPABASE_URL` (no es secreta).
 3. **Secrets en Cloudflare.** Workers & Pages → `ichiro-sushiya` → Settings → Variables and Secrets → Add,

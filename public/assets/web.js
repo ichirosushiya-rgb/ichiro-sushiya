@@ -143,17 +143,30 @@
         extra = `<span class="agotado">${p.turno === "mediodia" ? "No hay días cargados esta semana" : "Agotado por ahora"}</span>`;
       }
     }
+    const qty = `<div class="qty ${q ? "activa" : ""}" data-id="${esc(p.id)}">
+          <button class="menos" aria-label="Quitar ${esc(p.nombre)}">−</button>
+          <span>${q}</span>
+          <button class="mas" aria-label="Agregar ${esc(p.nombre)}" ${disponible ? "" : "disabled"}>+</button>
+        </div>`;
+    // Con foto: la foto ocupa el lado derecho y el + va encima
+    if (p.foto) {
+      return `<article class="card con-foto ${disponible ? "" : "no-disp"}">
+        <div class="info">
+          <h4>${esc(p.nombre)}</h4>
+          <p>${esc(p.descripcion)}</p>
+          ${extra}
+          <span class="precio">${precio(p.precio)}</span>
+        </div>
+        <div class="foto"><img src="${esc(p.foto)}" alt="${esc(p.nombre)}" loading="lazy">${qty}</div>
+      </article>`;
+    }
     return `<article class="card ${disponible ? "" : "no-disp"}">
       <h4>${esc(p.nombre)}</h4>
       <p>${esc(p.descripcion)}</p>
       ${extra}
       <div class="pie">
         <span class="precio">${precio(p.precio)}</span>
-        <div class="qty ${q ? "activa" : ""}" data-id="${esc(p.id)}">
-          <button class="menos" aria-label="Quitar ${esc(p.nombre)}">−</button>
-          <span>${q}</span>
-          <button class="mas" aria-label="Agregar ${esc(p.nombre)}" ${disponible ? "" : "disabled"}>+</button>
-        </div>
+        ${qty}
       </div>
     </article>`;
   }

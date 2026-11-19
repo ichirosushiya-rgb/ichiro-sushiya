@@ -1,0 +1,9 @@
+<!doctype html>
+<!-- Ícono (favicon): el koi en círculo. Se exporta con diseno/exportar.sh -->
+<html><head><meta charset="utf-8"><style>
+  html, body { margin: 0; width: 512px; height: 512px; background: transparent; }
+  body.fondo { background: #06063a; }
+  .koi { position: absolute; inset: 8px; border-radius: 50%; background: url(../public/assets/img/koi.jpg) center/cover; }
+  body.fondo .koi { inset: 40px; }
+</style></head><body><div class="koi"></div>
+<script>if (location.hash === "#fondo") document.body.className = "fondo";</script></body></html>

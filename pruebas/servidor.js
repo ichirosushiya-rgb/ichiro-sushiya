@@ -22,4 +22,24 @@ const ASSETS = {
 };
 const env = { ...Deno.env.toObject(), ASSETS };
 const ctx = { waitUntil: (p) => p.catch((e) => console.error(e)) };
-Deno.serve({ port: 8787, hostname: "0.0.0.0" }, (req) => worker.fetch(req, env, ctx));
+
+// Imitación mínima del Storage de Supabase, en memoria: /__storage/object/fotos/<nombre> (subir)
+// y /__storage/object/public/fotos/<nombre> (ver). Se borra al reiniciar.
+const fotos = new Map();
+async function storage(req, ruta) {
+  const subir = ruta.match(/^\/__storage\/object\/fotos\/([\w.-]+)$/);
+  if (subir && req.method === "POST") {
+    fotos.set(subir[1], { tipo: req.headers.get("content-type"), datos: new Uint8Array(await req.arrayBuffer()) });
+    return Response.json({ Key: "fotos/" + subir[1] });
+  }
+  const ver = ruta.match(/^\/__storage\/object\/public\/fotos\/([\w.-]+)$/);
+  const f = ver && fotos.get(ver[1]);
+  if (f) return new Response(f.datos, { headers: { "Content-Type": f.tipo } });
+  return new Response(JSON.stringify({ error: "Bucket not found" }), { status: 404 });
+}
+
+Deno.serve({ port: 8787, hostname: "0.0.0.0" }, (req) => {
+  const ruta = new URL(req.url).pathname;
+  if (ruta.startsWith("/__storage/")) return storage(req, ruta);
+  return worker.fetch(req, env, ctx);
+});

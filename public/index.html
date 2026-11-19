@@ -3,8 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ichiro Sushiya</title>
-<meta name="description" content="Ichiro Sushiya — armá tu pedido y mandalo por WhatsApp. Delivery sábados y domingos.">
+<title>Ichiro Sushiya · Sushi y pokes</title>
+<meta name="description" content="Dos hermanos unidos por la cocina y nuestro abuelo. Pokes de lunes a viernes al mediodía y sushi por encargue los fines de semana. Hacé tu pedido online.">
+<meta name="theme-color" content="#06063a">
+<link rel="canonical" href="https://ichirosushiya.com.ar/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<!-- Vista previa al compartir el link (WhatsApp, Instagram, Facebook, X) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Ichiro Sushiya">
+<meta property="og:locale" content="es_AR">
+<meta property="og:url" content="https://ichirosushiya.com.ar/">
+<meta property="og:title" content="Ichiro Sushiya · Sushi y pokes">
+<meta property="og:description" content="Pokes al mediodía de lunes a viernes y sushi por encargue los findes. Hacé tu pedido online.">
+<meta property="og:image" content="https://ichirosushiya.com.ar/assets/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Ichiro Sushiya: el logo de los dos peces koi">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Fuentes provisorias: se reemplazan cuando lleguen las del Canva -->
@@ -136,6 +153,13 @@
   .card .dias span { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: #fff; color: #4a4a72; }
   .card .agotado { font-size: 13px; font-weight: 500; color: #9a3b1c; }
   .card.no-disp { opacity: .55; }
+  /* Tarjeta con foto: texto a la izquierda, foto a la derecha con el + encima */
+  .card.con-foto { display: grid; grid-template-columns: 1fr 44%; padding: 0; gap: 0; overflow: hidden; min-height: 190px; }
+  .card.con-foto .info { display: flex; flex-direction: column; gap: 8px; padding: 22px; min-width: 0; }
+  .card.con-foto .precio { margin-top: auto; padding-top: 6px; }
+  .card.con-foto .foto { position: relative; background: #e9e7ef; }
+  .card.con-foto .foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .card.con-foto .qty { position: absolute; right: 10px; bottom: 10px; box-shadow: 0 6px 18px rgba(6,6,58,.25); }
   .qty .mas:disabled { background: #c9c7d6; cursor: not-allowed; }
   .cerrado { margin: -6px 0 18px; padding: 12px 16px; border-radius: 12px; background: #fff3ec; color: #8a3a12; font-size: 14px; }
 
